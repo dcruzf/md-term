@@ -1,0 +1,523 @@
+/* md-term: phosphor terminal theme. Override the variables to re-skin it. */
+:root {
+  --bg: #030b06;
+  --bg-raised: #08170d;
+  --fg: #9be8ae;
+  --fg-bright: #4dff88;
+  --fg-dim: #4c9462;
+  --line: #17402a;
+  --alert: #ffb454;
+  --glow: rgba(77, 255, 136, 0.35);
+  --font: "JetBrains Mono", "IBM Plex Mono", "Fira Code", ui-monospace, "SF Mono", Menlo,
+    Consolas, "DejaVu Sans Mono", monospace;
+  --measure: 88ch;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 1rem;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 30%, #07180e 0%, var(--bg) 70%) fixed;
+  color: var(--fg);
+  font: 15px/1.6 var(--font);
+  text-shadow: 0 0 6px rgba(77, 255, 136, 0.12);
+}
+
+/* Scanlines and a soft vignette, drawn above everything without eating clicks. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.16) 2px 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+::selection {
+  background: var(--fg-bright);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+a {
+  color: var(--fg-bright);
+  text-decoration: underline;
+  text-decoration-color: var(--fg-dim);
+  text-underline-offset: 3px;
+}
+
+a:hover,
+a:focus-visible {
+  background: var(--fg-bright);
+  color: var(--bg);
+  text-shadow: none;
+  outline: none;
+}
+
+.dim {
+  color: var(--fg-dim);
+}
+
+.js-only {
+  display: none;
+}
+
+.js .js-only {
+  display: revert;
+}
+
+/* ── Frame ─────────────────────────────────────────────────────────── */
+
+.term {
+  max-width: var(--measure);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.titlebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1.5ch;
+  padding: 14px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  color: var(--fg-bright);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  text-shadow: 0 0 10px var(--glow);
+}
+
+.brand::before {
+  content: "● ";
+}
+
+.tagline {
+  color: var(--fg-dim);
+}
+
+.cmdbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 1ch;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cmdbar a {
+  padding: 0 0.5ch;
+  text-decoration: none;
+}
+
+.cmdbar a::before {
+  content: "[";
+  color: var(--fg-dim);
+}
+
+.cmdbar a::after {
+  content: "]";
+  color: var(--fg-dim);
+}
+
+.cmdbar a:hover::before,
+.cmdbar a:hover::after,
+.cmdbar a:focus-visible::before,
+.cmdbar a:focus-visible::after {
+  color: inherit;
+}
+
+.cmdbar .feed {
+  margin-left: auto;
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 12px;
+}
+
+#scrollback {
+  flex: 1;
+}
+
+/* ── Prompt and command echo ───────────────────────────────────────── */
+
+.entry {
+  margin-bottom: 1.2rem;
+  scroll-margin-top: 0.75rem;
+}
+
+.cmdline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1ch;
+  color: var(--fg-bright);
+}
+
+.ps1 {
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+
+.cmd {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 8px var(--glow);
+}
+
+#prompt {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  flex-wrap: nowrap;
+  padding: 10px 0 14px;
+  background: linear-gradient(to bottom, transparent, var(--bg) 35%);
+}
+
+#prompt[hidden] {
+  display: none;
+}
+
+#input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--fg-bright);
+  font: inherit;
+  text-shadow: 0 0 8px var(--glow);
+  caret-color: var(--fg-bright);
+  caret-shape: block;
+}
+
+.motd {
+  margin: 0 0 1.2rem;
+  color: var(--fg-dim);
+  font: inherit;
+  white-space: pre-wrap;
+}
+
+/* ── Command output ────────────────────────────────────────────────── */
+
+.out {
+  margin-top: 0.4rem;
+}
+
+pre.plain {
+  margin: 0.4rem 0 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+pre.tree {
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.error {
+  color: var(--alert);
+  text-shadow: none;
+}
+
+.ls,
+.matches {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+.ls li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 2ch;
+}
+
+.ls a,
+.tree a,
+.matches a {
+  text-decoration: none;
+}
+
+a.dir {
+  font-weight: 700;
+}
+
+.meta {
+  color: var(--fg-dim);
+}
+
+.matches li {
+  overflow-wrap: anywhere;
+}
+
+mark {
+  background: var(--alert);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+.help {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0 3ch;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.help dt {
+  color: var(--fg-bright);
+}
+
+.help dd {
+  margin: 0;
+  color: var(--fg-dim);
+}
+
+.filemeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.5ch;
+  margin: 0 0 0.8rem;
+  color: var(--fg-dim);
+}
+
+.filemeta .tag {
+  text-decoration: none;
+}
+
+.draft {
+  color: var(--alert);
+}
+
+/* ── Rendered markdown ─────────────────────────────────────────────── */
+
+.prose {
+  overflow-wrap: break-word;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin: 1.8em 0 0.6em;
+  color: var(--fg-bright);
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.35;
+  text-shadow: 0 0 10px var(--glow);
+  scroll-margin-top: 0.75rem;
+}
+
+.prose h1 {
+  padding-bottom: 0.4em;
+  border-bottom: 3px double var(--line);
+  font-size: 1.25em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.prose h2::before {
+  content: "## ";
+  color: var(--fg-dim);
+}
+
+.prose h3::before {
+  content: "### ";
+  color: var(--fg-dim);
+}
+
+.prose h4::before {
+  content: "#### ";
+  color: var(--fg-dim);
+}
+
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose pre,
+.prose table {
+  margin: 0 0 1em;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 3ch;
+}
+
+.prose ul {
+  list-style: none;
+}
+
+.prose ul > li::before {
+  content: "-";
+  position: absolute;
+  margin-left: -2ch;
+  color: var(--fg-dim);
+}
+
+.prose li.task-list-item::before {
+  content: none;
+}
+
+.prose li.task-list-item {
+  margin-left: -3ch;
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin-bottom: 0;
+}
+
+.prose strong {
+  color: var(--fg-bright);
+}
+
+.prose blockquote {
+  margin-left: 0;
+  padding-left: 2ch;
+  border-left: 2px solid var(--fg-dim);
+  color: var(--fg-dim);
+}
+
+.prose hr {
+  margin: 1.6em 0;
+  border: 0;
+  border-top: 1px dashed var(--fg-dim);
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+.prose code {
+  font: inherit;
+  color: var(--fg-bright);
+}
+
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after {
+  content: "`";
+  color: var(--fg-dim);
+}
+
+.prose pre {
+  padding: 0.8em 1.5ch;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
+  line-height: 1.45;
+  text-shadow: none;
+}
+
+.prose pre code {
+  color: var(--fg);
+}
+
+/* Pygments tokens, kept within the phosphor palette. */
+.prose pre [class^="c"] {
+  color: var(--fg-dim);
+  font-style: italic;
+}
+
+.prose pre [class^="k"],
+.prose pre .ow,
+.prose pre .nt {
+  color: var(--fg-bright);
+  font-weight: 700;
+}
+
+.prose pre [class^="s"],
+.prose pre [class^="m"] {
+  color: var(--alert);
+}
+
+.prose pre .nf,
+.prose pre .nc,
+.prose pre .nd {
+  color: var(--fg-bright);
+}
+
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.prose th,
+.prose td {
+  padding: 0.2em 1.5ch;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.prose th {
+  color: var(--fg-bright);
+}
+
+.prose .footnotes {
+  margin-top: 2em;
+  color: var(--fg-dim);
+}
+
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+  }
+
+  .term {
+    padding: 0 12px;
+  }
+
+  .help {
+    grid-template-columns: 1fr;
+  }
+
+  .help dd {
+    margin: 0 0 0.4em 2ch;
+  }
+}
+
+@media print {
+  body::after,
+  .cmdbar,
+  #prompt {
+    display: none;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+  }
+}
