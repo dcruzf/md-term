@@ -153,13 +153,7 @@ a:focus-visible {
 
 .screen {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding-top: 12px;
-}
-
-#scrollback {
-  flex: 1;
+  padding: 12px 0 40vh;
 }
 
 /* ── Prompt and command echo ───────────────────────────────────────── */
@@ -187,13 +181,18 @@ a:focus-visible {
   text-shadow: 0 0 8px var(--glow);
 }
 
+/* The prompt follows the output, as in a real terminal. */
 #prompt {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
   flex-wrap: nowrap;
-  padding: 10px 0 14px;
-  background: linear-gradient(to bottom, transparent, var(--bg) 35%);
+  scroll-margin-bottom: 1.5rem;
+}
+
+#prompt.busy {
+  visibility: hidden;
+}
+
+.printing {
+  visibility: hidden;
 }
 
 #prompt[hidden] {
@@ -513,6 +512,10 @@ mark {
   .cmdbar,
   #prompt {
     display: none;
+  }
+
+  .screen {
+    padding-bottom: 0;
   }
 
   body {

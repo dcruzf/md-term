@@ -5,8 +5,9 @@ description: Referência dos comandos disponíveis para o visitante.
 
 # Comandos do shell
 
-O prompt fica sempre no rodapé da página. Tudo o que um comando lista também
-é clicável, então dá para navegar sem digitar nada.
+O prompt aparece logo depois da última saída, como em um terminal de verdade.
+Basta começar a digitar em qualquer lugar da página para voltar a ele. Tudo o
+que um comando lista também é clicável, então dá para navegar sem digitar nada.
 
 | Comando                  | O que faz                                       |
 | ------------------------ | ----------------------------------------------- |

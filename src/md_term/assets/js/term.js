@@ -127,7 +127,49 @@ async function openFile(path, entry, { push }) {
   if (push && url !== location.href.split("#")[0]) history.pushState({ path }, "", url);
 }
 
+// Output is printed top to bottom, a block at a time, before the prompt returns.
+const PRINT_BUDGET_MS = 600;
+const PRINT_STEP_MS = 30;
+
+function printable(entry) {
+  const lines = [];
+  for (const out of entry.querySelectorAll(":scope > :not(.cmdline)")) {
+    const prose = out.querySelector(":scope > .prose");
+    if (prose) lines.push(...out.querySelectorAll(":scope > :not(.prose)"), ...prose.children);
+    else if (out.matches("ul, dl")) lines.push(...out.children);
+    else lines.push(out);
+  }
+  return lines;
+}
+
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+async function print(lines) {
+  const step = Math.min(PRINT_STEP_MS, PRINT_BUDGET_MS / lines.length);
+  for (const line of lines) {
+    await new Promise((resolve) => setTimeout(resolve, step));
+    line.classList.remove("printing");
+  }
+}
+
+// Short output keeps the prompt in view; a long page is read from its top.
+function reveal(entry, anchor) {
+  if (anchor) anchor.scrollIntoView({ block: "start" });
+  else if (form.getBoundingClientRect().bottom - entry.getBoundingClientRect().top <= innerHeight) {
+    form.scrollIntoView({ block: "nearest" });
+  } else entry.scrollIntoView({ block: "start" });
+}
+
 async function run(line, { push = true, target = null } = {}) {
+  form.classList.add("busy");
+  try {
+    await execute(line, { push, target });
+  } finally {
+    form.classList.remove("busy");
+  }
+}
+
+async function execute(line, { push, target }) {
   const entry = newEntry(line);
   let result;
   try {
@@ -138,17 +180,20 @@ async function run(line, { push = true, target = null } = {}) {
   historyIndex = shell.history.length;
   saveHistory();
 
-  if (result.clear) {
-    scrollback.replaceChildren();
-  } else {
-    for (const block of result.out) entry.append(RENDER[block.type](block));
-    if (result.open) await openFile(result.open, entry, { push });
-  }
   promptLabel.textContent = ps1();
   root.dataset.cwd = shell.cwd;
+  if (result.clear) {
+    scrollback.replaceChildren();
+    scrollTo(0, 0);
+    return;
+  }
 
-  const anchor = target && entry.querySelector(`[id="${CSS.escape(target)}"]`);
-  (anchor || (result.clear ? form : entry)).scrollIntoView({ block: "start" });
+  for (const block of result.out) entry.append(RENDER[block.type](block));
+  if (result.open) await openFile(result.open, entry, { push });
+  const lines = reducedMotion.matches ? [] : printable(entry);
+  for (const node of lines) node.classList.add("printing"); // hidden but laid out, so the scroll is final
+  reveal(entry, target && entry.querySelector(`[id="${CSS.escape(target)}"]`));
+  await print(lines);
 }
 
 async function openPath(path) {
@@ -177,7 +222,7 @@ function loadHistory() {
 function showCandidates(candidates) {
   const entry = newEntry(input.value);
   entry.append(el("pre", "plain dim", candidates.map((c) => c.trim()).join("  ")));
-  form.scrollIntoView({ block: "end" });
+  form.scrollIntoView({ block: "nearest" });
 }
 
 form.addEventListener("submit", (event) => {
@@ -210,10 +255,19 @@ input.addEventListener("keydown", (event) => {
   }
 });
 
-// Typing anywhere lands in the prompt.
+// Typing anywhere lands in the prompt, and typing brings the prompt back into view.
 document.addEventListener("keydown", (event) => {
   if (event.target === input || event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key.length === 1 && event.key !== " ") input.focus({ preventScroll: true });
+});
+
+input.addEventListener("input", () => form.scrollIntoView({ block: "nearest" }));
+
+// Clicking the empty screen focuses the prompt, unless the click selected text.
+document.querySelector(".screen").addEventListener("click", (event) => {
+  if (event.target.closest("a, input, button, summary")) return;
+  if (!matchMedia("(pointer: fine)").matches) return; // a tap would summon the keyboard
+  if (getSelection().isCollapsed) input.focus({ preventScroll: true });
 });
 
 document.addEventListener("click", (event) => {
