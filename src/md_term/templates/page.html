@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block output %}
+<article class="out" id="content" data-path="{{ page.vpath }}">
+  {% if page.date or tags or page.draft %}
+  <p class="filemeta">
+    {% if page.draft %}<span class="draft">[draft]</span>{% endif %}
+    {% if page.date %}<time datetime="{{ page.date.isoformat() }}">{{ page.date.isoformat() }}</time>{% endif %}
+    {% for tag in tags %}
+    <a class="tag" href="{{ href(tag.url) }}" data-cmd="tag {{ '"%s"' % tag.name if ' ' in tag.name else tag.name }}">#{{ tag.name }}</a>
+    {% endfor %}
+  </p>
+  {% endif %}
+  <div class="prose">
+    {% if not page.has_heading %}
+    <h1>{{ page.title }}</h1>
+    {% endif %}
+    {{ page.html|safe }}
+  </div>
+</article>
+{% endblock %}

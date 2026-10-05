@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="{{ config.lang }}" data-base="{{ base }}" data-user="{{ config.user }}" data-host="{{ config.host }}" data-cwd="{{ cwd }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if title and title != config.site_name %}{{ title }} — {% endif %}{{ config.site_name }}</title>
+{% if description %}
+<meta name="description" content="{{ description }}">
+{% endif %}
+<link rel="stylesheet" href="{{ base }}assets/term.css">
+{% if has_feed %}
+<link rel="alternate" type="application/rss+xml" title="{{ config.site_name }}" href="{{ base }}feed.xml">
+{% endif %}
+</head>
+<body>
+<div class="term">
+  <header class="titlebar">
+    <a class="brand" href="{{ base }}">{{ config.site_name }}</a>
+    {% if config.description %}
+    <span class="tagline">{{ config.description }}</span>
+    {% endif %}
+  </header>
+  <nav class="cmdbar" aria-label="Commands">
+    <a class="js-only" href="{{ base }}" data-cmd="help">help</a>
+    <a href="{{ href(cwd[1:] + '/' if cwd != '/' else '') }}" data-cmd="ls">ls</a>
+    <a class="js-only" href="{{ base }}" data-cmd="tree">tree</a>
+    <a class="js-only" href="{{ base }}" data-cmd="posts">posts</a>
+    <a href="{{ base }}tags/" data-cmd="tags">tags</a>
+    <a class="js-only" href="{{ base }}" data-cmd="clear">clear</a>
+    {% if has_feed %}
+    <a class="feed" href="{{ base }}feed.xml">rss</a>
+    {% endif %}
+  </nav>
+  <main class="screen">
+    <div id="scrollback">
+      {% if motd %}
+      <pre class="motd">{{ motd }}</pre>
+      {% endif %}
+      <section class="entry">
+        <div class="cmdline"><span class="ps1">{{ ps1 }}</span> <span class="cmd">{{ command }}</span></div>
+        {% block output %}{% endblock %}
+      </section>
+    </div>
+    <form id="prompt" class="cmdline" autocomplete="off" hidden>
+      <label class="ps1" for="input">{{ ps1 }}</label>
+      <input id="input" type="text" aria-label="Command" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="go">
+    </form>
+  </main>
+</div>
+<script type="module" src="{{ base }}assets/js/term.js"></script>
+{% if livereload %}
+<script>
+(() => {
+  let seen = null;
+  setInterval(async () => {
+    try {
+      const version = await (await fetch("/__livereload", { cache: "no-store" })).text();
+      if (seen !== null && version !== seen) location.reload();
+      seen = version;
+    } catch {}
+  }, 1000);
+})();
+</script>
+{% endif %}
+</body>
+</html>

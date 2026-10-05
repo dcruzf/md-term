@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block output %}
+<div class="out" id="content">
+  {% if entries %}
+  <ul class="ls">
+    {% for entry in entries %}
+    <li>
+      <a class="{{ entry.kind }}" href="{{ href(entry.url) }}"
+         {%- if entry.path %} data-path="{{ entry.path }}"{% endif %}
+         {%- if entry.cmd %} data-cmd="{{ entry.cmd }}"{% endif %}>{{ entry.label }}</a>
+      {% if entry.meta %}<span class="meta">{{ entry.meta }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="dim">(empty)</p>
+  {% endif %}
+</div>
+{% endblock %}
