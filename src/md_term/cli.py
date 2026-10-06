@@ -37,8 +37,14 @@ def main() -> None:
 @main.command()
 @config_option
 @click.option("--drafts", is_flag=True, help="Include pages marked `draft: true`.")
-def build(config_file: Path, drafts: bool) -> None:
+@click.option("--watch", is_flag=True, help="Keep running and rebuild when the docs change.")
+def build(config_file: Path, drafts: bool, watch: bool) -> None:
     """Generate the static site."""
+    if watch:
+        from .serve import watch_and_build
+
+        watch_and_build(config_file, drafts=drafts)
+        return
     config = load_config(config_file)
     site = build_site(config, drafts=drafts)
     click.echo(f"Built {len(site.pages)} page(s) into {config.site_path}")

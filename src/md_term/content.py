@@ -13,6 +13,9 @@ from .config import Config, MdTermError
 FRONT_MATTER = re.compile(r"\A---[ \t]*\r?\n(.*?\r?\n)??---[ \t]*(\r?\n|\Z)", re.DOTALL)
 FIRST_HEADING = re.compile(r"\A\s*#[ \t]+(.+?)[ \t#]*$", re.MULTILINE)
 
+FENCE = re.compile(r"^(```|~~~).*?^\1[ \t]*$", re.MULTILINE | re.DOTALL)
+COMMENT = re.compile(r"%%.*?%%", re.DOTALL)
+
 # Paths the build writes itself; docs must not produce them.
 RESERVED_FILES = {"fs.json", "search.json", "feed.xml"}
 RESERVED_DIRS = {"tags"}
@@ -110,6 +113,16 @@ def _parse_tags(value: object, src: str) -> list[str]:
     return [tag for tag in (str(v).strip() for v in value) if tag]
 
 
+def strip_comments(text: str) -> str:
+    """Removes Obsidian's `%%private comments%%`, leaving fenced code alone."""
+    out, last = [], 0
+    for fence in FENCE.finditer(text):
+        out += [COMMENT.sub("", text[last : fence.start()]), fence.group(0)]
+        last = fence.end()
+    out.append(COMMENT.sub("", text[last:]))
+    return "".join(out)
+
+
 def parse_page(src: str, text: str) -> Page:
     meta: dict = {}
     body, body_line = text, 1
@@ -123,6 +136,8 @@ def parse_page(src: str, text: str) -> Page:
             raise MdTermError(f"{src}: front matter must be a mapping")
         body = text[match.end() :]
         body_line = match.group(0).count("\n") + 1
+    if "%%" in body:
+        body = strip_comments(body)
 
     heading = FIRST_HEADING.match(body)
     title = meta.get("title") or (heading.group(1) if heading else None)
@@ -141,7 +156,8 @@ def parse_page(src: str, text: str) -> Page:
         date=_parse_date(meta.get("date"), src),
         tags=_parse_tags(meta.get("tags"), src),
         description=str(meta.get("description") or ""),
-        draft=bool(meta.get("draft", False)),
+        # `publish: false` is how Obsidian marks a note as private.
+        draft=bool(meta.get("draft", False)) or meta.get("publish") is False,
     )
 
 

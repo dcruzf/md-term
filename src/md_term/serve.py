@@ -42,15 +42,38 @@ class _Handler(SimpleHTTPRequestHandler):
             log.info("%s", format % args)
 
 
-def _rebuild(config_file: Path, fallback: Config) -> Config:
+def _rebuild(config_file: Path, fallback: Config, **options: bool) -> Config:
     """Rebuild with a freshly read config; keep the previous one if anything fails."""
     try:
         config = load_config(config_file)
-        build(config, drafts=True, livereload=True)
+        site = build(config, **options)
+        log.info("Built %d page(s) into %s", len(site.pages), config.site_path)
         return config
     except MdTermError as exc:
-        log.error("%s", exc)
+        log.error("%s (keeping the previous build)", exc)
         return fallback
+
+
+def watch_and_build(config_file: Path, *, drafts: bool = False) -> None:
+    """Builds, then rebuilds whenever the docs or the config change. Never returns.
+
+    Meant for unattended publishing: a broken page is logged and the site that
+    is already published stays as it was.
+    """
+    try:
+        config = load_config(config_file)
+    except MdTermError as exc:
+        raise SystemExit(f"Error: {exc}") from exc
+    # The docs may not be there yet (a sync that has not run): create the folder
+    # so there is something to watch.
+    config.docs_path.mkdir(parents=True, exist_ok=True)
+    config = _rebuild(config_file, config, drafts=drafts)
+    log.info("Watching %s for changes (Ctrl+C to stop)", config.docs_path)
+    try:
+        for _ in watch(config.docs_path, config_file.resolve()):
+            config = _rebuild(config_file, config, drafts=drafts)
+    except KeyboardInterrupt:
+        pass
 
 
 def serve(config_file: Path, host: str, port: int) -> None:
@@ -68,7 +91,7 @@ def serve(config_file: Path, host: str, port: int) -> None:
     try:
         for _ in watch(*paths):
             log.info("Change detected, rebuilding")
-            config = _rebuild(config_file, config)
+            config = _rebuild(config_file, config, drafts=True, livereload=True)
             state.version += 1
     except KeyboardInterrupt:
         pass
