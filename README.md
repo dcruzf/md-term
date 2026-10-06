@@ -9,6 +9,8 @@ Think of mkdocs, except that visitors browse the knowledge base or blog with
 - With JavaScript the page gains a prompt with history, tab completion and
   full-text search. Everything that is listed is clickable too.
 - Posts with dates, tags and an RSS feed.
+- Obsidian-friendly: `[[wikilinks]]`, embeds and callouts work, and
+  `md-term build --watch` keeps a site in step with a vault folder.
 - Rich markdown: alerts, LaTeX formulas rendered at build time, Mermaid
   diagrams, footnotes, task lists and highlighted code.
 - Optional Python in the browser (a REPL and runnable code blocks),

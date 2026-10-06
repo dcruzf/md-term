@@ -19,7 +19,8 @@ $ cat guide/installation.md
 - [Configuration](guide/configuration.md): the options in `md-term.toml`
 - [Themes and colors](guide/themes.md): the built-in themes and how to make your own
 - [Python in the browser](guide/python.md): a REPL and runnable code blocks
-- [Publishing](guide/publishing.md): GitHub Pages and other hosts
+- [Obsidian vaults](guide/obsidian.md): publish a folder of your vault as it is
+- [Publishing](guide/publishing.md): GitHub Pages, other hosts and continuous publishing
 
 ## Reference
 

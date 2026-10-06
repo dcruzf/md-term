@@ -56,21 +56,26 @@ $ md-term serve -a 0.0.0.0:8000
 ## md-term build
 
 ```console
-$ md-term build [-f FILE] [--drafts]
+$ md-term build [-f FILE] [--drafts] [--watch]
 ```
 
 Writes the static site to `site_dir`.
 
-| Option                | Default        | Effect                            |
-| --------------------- | -------------- | --------------------------------- |
-| `-f`, `--config-file` | `md-term.toml` | configuration file                |
-| `--drafts`            | off            | includes pages with `draft: true` |
+| Option                | Default        | Effect                                        |
+| --------------------- | -------------- | --------------------------------------------- |
+| `-f`, `--config-file` | `md-term.toml` | configuration file                            |
+| `--drafts`            | off            | includes pages with `draft: true`             |
+| `--watch`             | off            | keeps running and rebuilds when a file changes |
+
+With `--watch` the command never exits. A build error is logged and the
+previous site stays in place; see
+[Publishing continuously](../guide/publishing.md#publishing-continuously).
 
 ### Warnings and errors
 
 The build warns, without stopping, when:
 
-- a link points to an `.md` file that does not exist
+- a link or a `[[wikilink]]` points to a page that does not exist
 - a formula cannot be converted
 - there are posts but `site_url` is empty, so no feed is written
 - a file listed in `extra_css` does not exist in `docs/`

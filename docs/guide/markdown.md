@@ -76,7 +76,9 @@ print(greet("world"))
 ## Alerts
 
 GitHub's alert syntax is supported, with five types: `NOTE`, `TIP`,
-`IMPORTANT`, `WARNING` and `CAUTION`.
+`IMPORTANT`, `WARNING` and `CAUTION`. Obsidian's callouts, with more types,
+custom titles and folding, are described under
+[Obsidian vaults](obsidian.md#callouts).
 
 ```markdown
 > [!TIP]

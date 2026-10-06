@@ -10,7 +10,7 @@ import pytest
 from md_term import python_runtime
 from md_term.build import build, relurl
 from md_term.config import THEMES, Config, MdTermError, load_config
-from md_term.content import parse_page
+from md_term.content import parse_page, strip_comments
 
 POST = """\
 ---
@@ -325,3 +325,52 @@ def test_python_option_values(tmp_path: Path):
         path.write_text(text + "\n")
         with pytest.raises(MdTermError, match=message):
             load_config(path)
+
+
+def test_strip_comments_spares_code():
+    text = "Keep %%drop this%% this.\n\n%%\nblock\ncomment\n%%\n\n```\n100 %% 7 %% 2\n```\nEnd %%x%%.\n"
+    out = strip_comments(text)
+    assert "drop" not in out and "block" not in out and "Keep  this." in out
+    assert "100 %% 7 %% 2" in out and out.endswith("End .\n")
+
+
+def test_obsidian_vault_conventions(project: Config, caplog):
+    docs = project.docs_path
+    (docs / "Notes").mkdir()
+    (docs / "Notes" / "My Note.md").write_text(
+        "---\ntags: [idea]\n---\nLinks: [[first]], [[Setup#Install|install]], [[Nowhere]].\n\n"
+        "![[pic.png]]\n\n%%private thought%%\n"
+    )
+    (docs / "secret.md").write_text("---\npublish: false\n---\nhidden\n")
+    (docs / ".obsidian").mkdir()
+    (docs / ".obsidian" / "app.json").write_text("{}")
+    build(project)
+
+    note = read(project, "Notes/My Note/index.html")
+    assert '<a href="../../blog/first/">first</a>' in note
+    assert '<a href="../../guide/setup/#install">install</a>' in note
+    assert '<img src="../../blog/pic.png" alt="pic.png">' in note
+    assert 'class="broken-link"' in note and "broken link to [[Nowhere]]" in caplog.text
+    assert "private thought" not in note
+    assert "private thought" not in read(project, "search.json")
+    assert not (project.site_path / "secret").exists()
+    assert not (project.site_path / ".obsidian").exists()
+    fs = json.loads(read(project, "fs.json"))
+    assert fs["nodes"]["/Notes/My Note.md"]["url"] == "Notes/My Note/"
+
+
+def test_failed_build_keeps_the_previous_site(project: Config):
+    build(project)
+    before = read(project, "index.html")
+    (project.docs_path / "broken.md").write_text("---\ndate: never\n---\n")
+    with pytest.raises(MdTermError):
+        build(project)
+    assert read(project, "index.html") == before
+    assert not list(project.root.glob(".site-build-*"))
+
+    (project.docs_path / "broken.md").unlink()
+    (project.docs_path / "index.md").write_text("# Changed\n")
+    build(project)
+    assert "Changed" in read(project, "index.html")
+    assert not list(project.root.glob(".site-build-*"))
+    assert oct(project.site_path.stat().st_mode & 0o777) == "0o755"

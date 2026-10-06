@@ -595,10 +595,44 @@ mark {
   background: var(--bg-raised);
 }
 
-.prose .markdown-alert-warning,
-.prose .markdown-alert-caution,
+.prose .markdown-alert:is(
+    .markdown-alert-warning,
+    .markdown-alert-caution,
+    .markdown-alert-attention,
+    .markdown-alert-danger,
+    .markdown-alert-error,
+    .markdown-alert-failure,
+    .markdown-alert-fail,
+    .markdown-alert-missing,
+    .markdown-alert-bug
+  ),
 .prose .admonition:is(.warning, .caution, .danger, .error, .attention) {
   --accent: var(--alert);
+}
+
+/* Foldable callouts (> [!note]- Title) are <details>. */
+.prose details.markdown-alert > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.prose details.markdown-alert > summary::after {
+  content: " [+]";
+  color: var(--fg-dim);
+}
+
+.prose details.markdown-alert[open] > summary::after {
+  content: " [-]";
+}
+
+.prose details.markdown-alert:not([open]) > summary {
+  margin-bottom: 0;
+}
+
+.prose .broken-link {
+  color: var(--fg-dim);
+  text-decoration: underline dashed;
+  text-underline-offset: 3px;
 }
 
 .prose .markdown-alert > :last-child,
@@ -620,12 +654,39 @@ mark {
   content: "[i] ";
 }
 
-.prose .markdown-alert-tip .markdown-alert-title::before,
+.prose
+  :is(
+    .markdown-alert-tip,
+    .markdown-alert-hint,
+    .markdown-alert-success,
+    .markdown-alert-check,
+    .markdown-alert-done
+  )
+  > .markdown-alert-title::before,
 .prose .admonition:is(.tip, .hint, .success) .admonition-title::before {
   content: "[*] ";
 }
 
-.prose :is(.markdown-alert-important, .markdown-alert-warning, .markdown-alert-caution) .markdown-alert-title::before,
+.prose
+  :is(.markdown-alert-question, .markdown-alert-help, .markdown-alert-faq)
+  > .markdown-alert-title::before {
+  content: "[?] ";
+}
+
+.prose
+  :is(
+    .markdown-alert-important,
+    .markdown-alert-warning,
+    .markdown-alert-caution,
+    .markdown-alert-attention,
+    .markdown-alert-danger,
+    .markdown-alert-error,
+    .markdown-alert-failure,
+    .markdown-alert-fail,
+    .markdown-alert-missing,
+    .markdown-alert-bug
+  )
+  > .markdown-alert-title::before,
 .prose .admonition:is(.important, .warning, .caution, .danger, .error, .attention) .admonition-title::before {
   content: "[!] ";
 }

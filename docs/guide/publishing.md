@@ -91,10 +91,68 @@ rsync -av --delete site/ user@server:/var/www/my-site/
 The server must answer with `index.html` when an address ends in `/`, which
 is the default behavior of practically all of them.
 
+## Publishing continuously
+
+Instead of building and uploading, the site can follow a folder: whenever a
+file changes, it is rebuilt.
+
+```bash
+md-term build --watch
+```
+
+This is meant to run unattended next to a web server that serves `site/`:
+
+- a page with an error (bad front matter, for example) is logged and the
+  site that is already published stays as it was
+- the new site is written to a temporary folder and swapped in at the end,
+  so a visitor never gets a half-built site
+
+```mermaid
+flowchart LR
+    V[Notes] -->|sync| D[docs folder]
+    D --> W(md-term build --watch)
+    W --> S[site folder]
+    S --> N(web server)
+    N --> B[Visitors]
+```
+
+How the notes reach the folder is up to you: a synchronization tool, a
+mounted volume, or `git pull` on a timer.
+
+### Container image
+
+The repository has a `Dockerfile` whose default command is
+`build --watch`. Mount the notes, an output volume and the configuration:
+
+```bash
+docker build -t md-term .
+docker run -d \
+  -v /path/to/notes:/vault:ro \
+  -v site-output:/out \
+  -v ./md-term.toml:/work/md-term.toml:ro \
+  md-term
+```
+
+with a configuration that points at those mounts:
+
+```toml
+docs_dir = "/vault"
+site_dir = "/out/site"
+```
+
+> [!IMPORTANT]
+> `site_dir` must be a folder *inside* the mounted volume, not the mount
+> point itself: the build replaces the folder, which cannot be done to a
+> mount point.
+
+The process runs as user 1000, which must be able to write to the output
+volume. Any static web server can then serve `/out/site`.
+
 ## The site/ folder
 
-The build wipes and recreates `site/` on every run. For safety it refuses to
-wipe a folder that is not empty and was not created by md-term itself.
+The build writes the new site next to `site/` and then replaces it, so a
+build that fails leaves the previous one untouched. For safety it refuses to
+replace a folder that is not empty and was not created by md-term itself.
 
 > [!WARNING]
 > Do not edit files inside `site/`: the changes are lost on the next build.
