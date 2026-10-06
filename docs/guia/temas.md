@@ -20,6 +20,7 @@ Há quatro formas de mudar a aparência, da mais simples à mais livre:
 | `amber` | <span title="#0c0700" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#0c0700;border:1px solid #888"></span><span title="#1a1003" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#1a1003;border:1px solid #888"></span><span title="#f2c078" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#f2c078;border:1px solid #888"></span><span title="#ffb000" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#ffb000;border:1px solid #888"></span><span title="#a3742a" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#a3742a;border:1px solid #888"></span><span title="#46300c" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#46300c;border:1px solid #888"></span><span title="#ff6b4a" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#ff6b4a;border:1px solid #888"></span> | monitor âmbar |
 | `ice` | <span title="#030910" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#030910;border:1px solid #888"></span><span title="#081624" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#081624;border:1px solid #888"></span><span title="#a9d6f5" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#a9d6f5;border:1px solid #888"></span><span title="#5cc8ff" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#5cc8ff;border:1px solid #888"></span><span title="#4f86ad" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#4f86ad;border:1px solid #888"></span><span title="#173650" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#173650;border:1px solid #888"></span><span title="#ffd166" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#ffd166;border:1px solid #888"></span> | azul frio |
 | `mono` | <span title="#0a0a0a" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#0a0a0a;border:1px solid #888"></span><span title="#161616" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#161616;border:1px solid #888"></span><span title="#d0d0d0" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#d0d0d0;border:1px solid #888"></span><span title="#ffffff" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#ffffff;border:1px solid #888"></span><span title="#858585" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#858585;border:1px solid #888"></span><span title="#333333" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#333333;border:1px solid #888"></span><span title="#ffcc66" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#ffcc66;border:1px solid #888"></span> | cinza neutro sobre preto |
+| `dracula` | <span title="#282a36" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#282a36;border:1px solid #888"></span><span title="#343746" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#343746;border:1px solid #888"></span><span title="#f8f8f2" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#f8f8f2;border:1px solid #888"></span><span title="#bd93f9" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#bd93f9;border:1px solid #888"></span><span title="#8b98c9" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#8b98c9;border:1px solid #888"></span><span title="#44475a" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#44475a;border:1px solid #888"></span><span title="#ff79c6" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#ff79c6;border:1px solid #888"></span> | a paleta [Dracula](https://draculatheme.com/), roxo sobre grafite |
 | `paper` | <span title="#f4f1e8" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#f4f1e8;border:1px solid #888"></span><span title="#e9e5d8" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#e9e5d8;border:1px solid #888"></span><span title="#2b2b26" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#2b2b26;border:1px solid #888"></span><span title="#000000" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#000000;border:1px solid #888"></span><span title="#6b6a60" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#6b6a60;border:1px solid #888"></span><span title="#c9c4b3" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#c9c4b3;border:1px solid #888"></span><span title="#b3261e" style="display:inline-block;width:2.5ch;height:1.1em;vertical-align:middle;background:#b3261e;border:1px solid #888"></span> | claro, para ler de dia |
 
 As amostras seguem a ordem das variáveis: fundo, fundo elevado, texto, texto
@@ -91,12 +92,12 @@ line = "#003d1a"
 alert = "#ffffff"
 ```
 
-Roxo sobre grafite:
+Roxo sobre preto, mais escuro que o `dracula`:
 
 ```toml
 [colors]
-bg = "#15121c"
-bg_raised = "#1f1a2b"
+bg = "#0d0b12"
+bg_raised = "#17131f"
 fg = "#cfc6e6"
 fg_bright = "#c49bff"
 fg_dim = "#7d7399"
@@ -181,12 +182,12 @@ você deixa de receber as melhorias do tema padrão a cada atualização.
 
 ## Referência dos temas
 
-| Variável | `phosphor` | `amber` | `ice` | `mono` | `paper` |
-| --- | --- | --- | --- | --- | --- |
-| `--bg` | `#030b06` | `#0c0700` | `#030910` | `#0a0a0a` | `#f4f1e8` |
-| `--bg-raised` | `#08170d` | `#1a1003` | `#081624` | `#161616` | `#e9e5d8` |
-| `--fg` | `#9be8ae` | `#f2c078` | `#a9d6f5` | `#d0d0d0` | `#2b2b26` |
-| `--fg-bright` | `#4dff88` | `#ffb000` | `#5cc8ff` | `#ffffff` | `#000000` |
-| `--fg-dim` | `#4c9462` | `#a3742a` | `#4f86ad` | `#858585` | `#6b6a60` |
-| `--line` | `#17402a` | `#46300c` | `#173650` | `#333333` | `#c9c4b3` |
-| `--alert` | `#ffb454` | `#ff6b4a` | `#ffd166` | `#ffcc66` | `#b3261e` |
+| Variável | `phosphor` | `amber` | `ice` | `mono` | `dracula` | `paper` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `--bg` | `#030b06` | `#0c0700` | `#030910` | `#0a0a0a` | `#282a36` | `#f4f1e8` |
+| `--bg-raised` | `#08170d` | `#1a1003` | `#081624` | `#161616` | `#343746` | `#e9e5d8` |
+| `--fg` | `#9be8ae` | `#f2c078` | `#a9d6f5` | `#d0d0d0` | `#f8f8f2` | `#2b2b26` |
+| `--fg-bright` | `#4dff88` | `#ffb000` | `#5cc8ff` | `#ffffff` | `#bd93f9` | `#000000` |
+| `--fg-dim` | `#4c9462` | `#a3742a` | `#4f86ad` | `#858585` | `#8b98c9` | `#6b6a60` |
+| `--line` | `#17402a` | `#46300c` | `#173650` | `#333333` | `#44475a` | `#c9c4b3` |
+| `--alert` | `#ffb454` | `#ff6b4a` | `#ffd166` | `#ffcc66` | `#ff79c6` | `#b3261e` |

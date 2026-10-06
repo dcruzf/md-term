@@ -8,7 +8,7 @@ from pathlib import Path
 CONFIG_NAME = "md-term.toml"
 
 # Presets defined in assets/term.css; the first one is the default.
-THEMES = ("phosphor", "amber", "ice", "mono", "paper")
+THEMES = ("phosphor", "amber", "ice", "mono", "dracula", "paper")
 # Keys accepted in [colors]; each maps to the CSS variable --<key-with-dashes>.
 COLOR_KEYS = ("bg", "bg_raised", "fg", "fg_bright", "fg_dim", "line", "alert", "glow")
 _CSS_VALUE = re.compile(r"[#\w(),.%/\s-]+")

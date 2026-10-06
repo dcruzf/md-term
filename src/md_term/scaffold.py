@@ -19,7 +19,7 @@ host = "my-site"
 # Greeting printed on the home page.
 motd = "Welcome. Type 'help' or click a command above."
 
-# Color theme: phosphor, amber, ice, mono or paper.
+# Color theme: phosphor, amber, ice, mono, dracula or paper.
 theme = "phosphor"
 
 # Override individual colors of the theme.

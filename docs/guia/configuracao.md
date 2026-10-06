@@ -39,7 +39,7 @@ Em TOML, as opções simples precisam vir antes de qualquer tabela como
 | `user`        | `guest`     | usuário mostrado no prompt                      |
 | `host`        | do nome     | máquina mostrada no prompt                      |
 | `motd`        | vazio       | mensagem exibida na página inicial              |
-| `theme`       | `phosphor`  | tema de cores: `phosphor`, `amber`, `ice`, `mono` ou `paper` |
+| `theme`       | `phosphor`  | tema de cores: `phosphor`, `amber`, `ice`, `mono`, `dracula` ou `paper` |
 | `[colors]`    | vazio       | cores que substituem as do tema                 |
 | `extra_css`   | vazio       | folhas de estilo de `docs/` carregadas depois da padrão |
 

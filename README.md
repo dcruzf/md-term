@@ -9,7 +9,7 @@ blog com `ls`, `cd`, `cat` e `grep`.
 - Com JavaScript, a página ganha um prompt com histórico, autocompletar e
   busca full-text. Tudo o que é listado também é clicável.
 - Posts com data, tags e feed RSS.
-- Cinco temas de cores (`phosphor`, `amber`, `ice`, `mono`, `paper`) e paleta
+- Seis temas de cores (`phosphor`, `amber`, `ice`, `mono`, `dracula`, `paper`) e paleta
   configurável no `md-term.toml`.
 
 ## Uso

@@ -59,6 +59,16 @@
   --alert: #ffcc66;
 }
 
+:root[data-theme="dracula"] {
+  --bg: #282a36;
+  --bg-raised: #343746;
+  --fg: #f8f8f2;
+  --fg-bright: #bd93f9;
+  --fg-dim: #8b98c9;
+  --line: #44475a;
+  --alert: #ff79c6;
+}
+
 :root[data-theme="paper"] {
   --bg: #f4f1e8;
   --bg-raised: #e9e5d8;
