@@ -1,0 +1,760 @@
+/* md-term terminal theme.
+ *
+ * Every color comes from the variables below. A theme is a block that
+ * redefines them; the presets follow, and `theme` in md-term.toml picks one.
+ *
+ *   --bg         page background
+ *   --bg-raised  code blocks and the glow behind the page
+ *   --fg         body text
+ *   --fg-bright  headings, links, commands, emphasis
+ *   --fg-dim     prompt, metadata, punctuation
+ *   --line       rules and borders
+ *   --alert      errors, search hits, strings in code
+ *   --glow       halo around bright text ("transparent" turns it off)
+ */
+:root {
+  --bg: #030b06;
+  --bg-raised: #08170d;
+  --fg: #9be8ae;
+  --fg-bright: #4dff88;
+  --fg-dim: #4c9462;
+  --line: #17402a;
+  --alert: #ffb454;
+  --glow: color-mix(in srgb, var(--fg-bright) 35%, transparent);
+  --scanline: rgba(0, 0, 0, 0.16);
+  --vignette: rgba(0, 0, 0, 0.45);
+  --font: "JetBrains Mono", "IBM Plex Mono", "Fira Code", ui-monospace, "SF Mono", Menlo,
+    Consolas, "DejaVu Sans Mono", monospace;
+  --measure: 88ch;
+  color-scheme: dark;
+}
+
+:root[data-theme="amber"] {
+  --bg: #0c0700;
+  --bg-raised: #1a1003;
+  --fg: #f2c078;
+  --fg-bright: #ffb000;
+  --fg-dim: #a3742a;
+  --line: #46300c;
+  --alert: #ff6b4a;
+}
+
+:root[data-theme="ice"] {
+  --bg: #030910;
+  --bg-raised: #081624;
+  --fg: #a9d6f5;
+  --fg-bright: #5cc8ff;
+  --fg-dim: #4f86ad;
+  --line: #173650;
+  --alert: #ffd166;
+}
+
+:root[data-theme="mono"] {
+  --bg: #0a0a0a;
+  --bg-raised: #161616;
+  --fg: #d0d0d0;
+  --fg-bright: #ffffff;
+  --fg-dim: #858585;
+  --line: #333333;
+  --alert: #ffcc66;
+}
+
+:root[data-theme="dracula"] {
+  --bg: #282a36;
+  --bg-raised: #343746;
+  --fg: #f8f8f2;
+  --fg-bright: #bd93f9;
+  --fg-dim: #8b98c9;
+  --line: #44475a;
+  --alert: #ff79c6;
+}
+
+:root[data-theme="paper"] {
+  --bg: #f4f1e8;
+  --bg-raised: #e9e5d8;
+  --fg: #2b2b26;
+  --fg-bright: #000000;
+  --fg-dim: #6b6a60;
+  --line: #c9c4b3;
+  --alert: #b3261e;
+  --glow: transparent;
+  --scanline: rgba(0, 0, 0, 0.04);
+  --vignette: rgba(0, 0, 0, 0.08);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 1rem;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 30%, var(--bg-raised) 0%, var(--bg) 70%) fixed;
+  color: var(--fg);
+  font: 15px/1.6 var(--font);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--glow) 35%, transparent);
+}
+
+/* Scanlines and a soft vignette, drawn above everything without eating clicks. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 2px, var(--scanline) 2px 3px),
+    radial-gradient(ellipse at center, transparent 55%, var(--vignette) 100%);
+}
+
+::selection {
+  background: var(--fg-bright);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+a {
+  color: var(--fg-bright);
+  text-decoration: underline;
+  text-decoration-color: var(--fg-dim);
+  text-underline-offset: 3px;
+}
+
+a:hover,
+a:focus-visible {
+  background: var(--fg-bright);
+  color: var(--bg);
+  text-shadow: none;
+  outline: none;
+}
+
+.dim {
+  color: var(--fg-dim);
+}
+
+.js-only {
+  display: none;
+}
+
+.js .js-only {
+  display: revert;
+}
+
+/* ── Frame ─────────────────────────────────────────────────────────── */
+
+.term {
+  max-width: var(--measure);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.titlebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1.5ch;
+  padding: 14px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  color: var(--fg-bright);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  text-shadow: 0 0 10px var(--glow);
+}
+
+.brand::before {
+  content: "● ";
+}
+
+.tagline {
+  color: var(--fg-dim);
+}
+
+.cmdbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 1ch;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cmdbar a {
+  padding: 0 0.5ch;
+  text-decoration: none;
+}
+
+.cmdbar a::before {
+  content: "[";
+  color: var(--fg-dim);
+}
+
+.cmdbar a::after {
+  content: "]";
+  color: var(--fg-dim);
+}
+
+.cmdbar a:hover::before,
+.cmdbar a:hover::after,
+.cmdbar a:focus-visible::before,
+.cmdbar a:focus-visible::after {
+  color: inherit;
+}
+
+.cmdbar .feed {
+  margin-left: auto;
+}
+
+.screen {
+  flex: 1;
+  padding: 12px 0 40vh;
+}
+
+/* ── Prompt and command echo ───────────────────────────────────────── */
+
+.entry {
+  margin-bottom: 1.2rem;
+  scroll-margin-top: 0.75rem;
+}
+
+.entry.repl {
+  margin-bottom: 0.1rem;
+}
+
+.entry.repl pre.plain {
+  margin-top: 0;
+}
+
+.cmdline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1ch;
+  color: var(--fg-bright);
+}
+
+.ps1 {
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+
+.cmd {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 8px var(--glow);
+}
+
+/* The prompt follows the output, as in a real terminal. */
+#prompt {
+  flex-wrap: nowrap;
+  scroll-margin-bottom: 1.5rem;
+}
+
+/* Hidden while a command prints. Not `visibility: hidden`: that would blur the input. */
+#prompt.busy {
+  opacity: 0;
+}
+
+.printing {
+  visibility: hidden;
+}
+
+#prompt[hidden] {
+  display: none;
+}
+
+#input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--fg-bright);
+  font: inherit;
+  text-shadow: 0 0 8px var(--glow);
+  caret-color: var(--fg-bright);
+  caret-shape: block;
+}
+
+.motd {
+  margin: 0 0 1.2rem;
+  color: var(--fg-dim);
+  font: inherit;
+  white-space: pre-wrap;
+}
+
+/* ── Command output ────────────────────────────────────────────────── */
+
+.out {
+  margin-top: 0.4rem;
+}
+
+pre.plain {
+  margin: 0.4rem 0 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+pre.tree {
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.error {
+  color: var(--alert);
+  text-shadow: none;
+}
+
+.ls,
+.matches {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+
+.ls li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 2ch;
+}
+
+.ls a,
+.tree a,
+.matches a {
+  text-decoration: none;
+}
+
+a.dir,
+a.current {
+  font-weight: 700;
+}
+
+.meta {
+  color: var(--fg-dim);
+}
+
+.matches li {
+  overflow-wrap: anywhere;
+}
+
+mark {
+  background: var(--alert);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+.help {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0 3ch;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.help dt {
+  color: var(--fg-bright);
+}
+
+.help dd {
+  margin: 0;
+  color: var(--fg-dim);
+}
+
+.filemeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.5ch;
+  margin: 0 0 0.8rem;
+  color: var(--fg-dim);
+}
+
+.filemeta .tag {
+  text-decoration: none;
+}
+
+.draft {
+  color: var(--alert);
+}
+
+/* ── Rendered markdown ─────────────────────────────────────────────── */
+
+.prose {
+  overflow-wrap: break-word;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin: 1.8em 0 0.6em;
+  color: var(--fg-bright);
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.35;
+  text-shadow: 0 0 10px var(--glow);
+  scroll-margin-top: 0.75rem;
+}
+
+.prose h1 {
+  padding-bottom: 0.4em;
+  border-bottom: 3px double var(--line);
+  font-size: 1.25em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.prose h2::before {
+  content: "## ";
+  color: var(--fg-dim);
+}
+
+.prose h3::before {
+  content: "### ";
+  color: var(--fg-dim);
+}
+
+.prose h4::before {
+  content: "#### ";
+  color: var(--fg-dim);
+}
+
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose pre,
+.prose table {
+  margin: 0 0 1em;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 3ch;
+}
+
+.prose ul {
+  list-style: none;
+}
+
+.prose ul > li::before {
+  content: "-";
+  position: absolute;
+  margin-left: -2ch;
+  color: var(--fg-dim);
+}
+
+.prose li.task-list-item::before {
+  content: none;
+}
+
+.prose li.task-list-item {
+  margin-left: -3ch;
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin-bottom: 0;
+}
+
+.prose strong {
+  color: var(--fg-bright);
+}
+
+.prose blockquote {
+  margin-left: 0;
+  padding-left: 2ch;
+  border-left: 2px solid var(--fg-dim);
+  color: var(--fg-dim);
+}
+
+.prose hr {
+  margin: 1.6em 0;
+  border: 0;
+  border-top: 1px dashed var(--fg-dim);
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+.prose code {
+  font: inherit;
+  color: var(--fg-bright);
+}
+
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after {
+  content: "`";
+  color: var(--fg-dim);
+}
+
+/* Inverted links: keep inline code readable on the bright background. */
+.prose a:hover code,
+.prose a:focus-visible code,
+.prose a:hover code::before,
+.prose a:hover code::after,
+.prose a:focus-visible code::before,
+.prose a:focus-visible code::after {
+  color: inherit;
+}
+
+.prose pre {
+  padding: 0.8em 1.5ch;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
+  line-height: 1.45;
+  text-shadow: none;
+}
+
+.prose pre code {
+  color: var(--fg);
+}
+
+/* [run] and [copy] links on code blocks, added by the shell. */
+.prose pre {
+  position: relative;
+}
+
+.prose pre .actions {
+  position: absolute;
+  top: 0.3em;
+  right: 1ch;
+  display: flex;
+  gap: 1ch;
+  opacity: 0.55;
+}
+
+.prose pre:hover .actions,
+.prose pre .actions:focus-within {
+  opacity: 1;
+}
+
+.prose pre .actions a {
+  background: var(--bg-raised);
+  text-decoration: none;
+}
+
+.prose pre .actions a:hover,
+.prose pre .actions a:focus-visible {
+  background: var(--fg-bright);
+}
+
+.prose pre .actions a::before {
+  content: "[";
+  color: var(--fg-dim);
+}
+
+.prose pre .actions a::after {
+  content: "]";
+  color: var(--fg-dim);
+}
+
+/* ── Alerts (> [!NOTE]) and admonitions (!!! note) ─────────────────── */
+
+.prose .markdown-alert,
+.prose .admonition {
+  --accent: var(--fg-bright);
+  margin: 0 0 1em;
+  padding: 0.6em 2ch;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-raised);
+}
+
+.prose .markdown-alert-warning,
+.prose .markdown-alert-caution,
+.prose .admonition:is(.warning, .caution, .danger, .error, .attention) {
+  --accent: var(--alert);
+}
+
+.prose .markdown-alert > :last-child,
+.prose .admonition > :last-child {
+  margin-bottom: 0;
+}
+
+.prose .markdown-alert-title,
+.prose .admonition-title {
+  margin-bottom: 0.4em;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.prose .markdown-alert-title::before,
+.prose .admonition-title::before {
+  content: "[i] ";
+}
+
+.prose .markdown-alert-tip .markdown-alert-title::before,
+.prose .admonition:is(.tip, .hint, .success) .admonition-title::before {
+  content: "[*] ";
+}
+
+.prose :is(.markdown-alert-important, .markdown-alert-warning, .markdown-alert-caution) .markdown-alert-title::before,
+.prose .admonition:is(.important, .warning, .caution, .danger, .error, .attention) .admonition-title::before {
+  content: "[!] ";
+}
+
+/* ── Math (MathML generated at build time) ─────────────────────────── */
+
+.prose math {
+  color: var(--fg-bright);
+  font-size: 1.1em;
+  text-shadow: none;
+}
+
+.prose .math.block {
+  position: relative;
+  margin: 0 0 1em;
+  padding: 0.4em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.prose .math.block .mathlabel {
+  position: absolute;
+  right: 0;
+  text-decoration: none;
+}
+
+.prose .math-error {
+  color: var(--alert);
+}
+
+/* ── Diagrams and definition lists ─────────────────────────────────── */
+
+.prose figure.diagram {
+  margin: 0 0 1em;
+  padding: 0.8em 1ch;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  text-align: center;
+  text-shadow: none;
+}
+
+.prose figure.diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.prose pre.mermaid.failed {
+  border-color: var(--alert);
+}
+
+.prose dl {
+  margin: 0 0 1em;
+}
+
+.prose dt {
+  color: var(--fg-bright);
+  font-weight: 700;
+}
+
+.prose dd {
+  margin: 0 0 0.5em 4ch;
+}
+
+/* Pygments tokens, kept within the phosphor palette. */
+.prose pre code [class^="c"] {
+  color: var(--fg-dim);
+  font-style: italic;
+}
+
+.prose pre code [class^="k"],
+.prose pre code .ow,
+.prose pre code .nt {
+  color: var(--fg-bright);
+  font-weight: 700;
+}
+
+.prose pre code [class^="s"],
+.prose pre code [class^="m"] {
+  color: var(--alert);
+}
+
+.prose pre code .nf,
+.prose pre code .nc,
+.prose pre code .nd {
+  color: var(--fg-bright);
+}
+
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.prose th,
+.prose td {
+  padding: 0.2em 1.5ch;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.prose th {
+  color: var(--fg-bright);
+}
+
+.prose .footnotes {
+  margin-top: 2em;
+  color: var(--fg-dim);
+}
+
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+  }
+
+  .term {
+    padding: 0 12px;
+  }
+
+  .help {
+    grid-template-columns: 1fr;
+  }
+
+  .help dd {
+    margin: 0 0 0.4em 2ch;
+  }
+}
+
+@media print {
+  body::after,
+  .cmdbar,
+  #prompt {
+    display: none;
+  }
+
+  .screen {
+    padding-bottom: 0;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    text-shadow: none;
+  }
+}

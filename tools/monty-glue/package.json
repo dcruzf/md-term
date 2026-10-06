@@ -1,0 +1,13 @@
+{
+  "name": "md-term-monty-glue",
+  "private": true,
+  "type": "module",
+  "description": "Bundles the browser glue for the Monty Python runtime shipped with md-term.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@pydantic/monty": "1.1.0",
+    "esbuild": "0.25.10"
+  }
+}

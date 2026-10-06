@@ -1,0 +1,13 @@
+site_name = "md-term"
+description = "markdown served in a terminal"
+site_url = "https://dcruzf.github.io/md-term/"
+lang = "en"
+
+user = "guest"
+host = "md-term"
+python = "pyodide"
+
+motd = """
+md-term 0.1.0 :: a knowledge base in text mode
+Type 'help' or click a command above.
+"""
