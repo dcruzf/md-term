@@ -104,6 +104,64 @@ $ python
 - Variables live for as long as the page is open, and are shared by the
   REPL, `python -c` and the `[run]` blocks.
 
+## Scripts and the editor
+
+With Python enabled, the site has one writable place: the `~/scratch`
+folder. Files there are yours, kept in your browser.
+
+```console
+$ edit hello.py
+$ python hello.py
+$ ls ~/scratch
+```
+
+`edit` opens an editor inside the terminal, with syntax highlighting and
+automatic indentation for Python.
+
+| Key                               | Action                                  |
+| --------------------------------- | --------------------------------------- |
+| <kbd>Ctrl</kbd>+<kbd>S</kbd>      | save                                    |
+| <kbd>Ctrl</kbd>+<kbd>Enter</kbd>  | save and run (Python files)             |
+| <kbd>Esc</kbd>                    | leave; asks once if there are unsaved changes |
+
+The same three actions are buttons under the editor, for touch screens. The
+keys are not nano's `^O` and `^X` because browsers keep those for
+themselves.
+
+A bare file name means the scratch folder wherever you are, so
+`edit hello.py` and `python hello.py` work from any directory. Python blocks
+in the articles also get an `[edit]` link, which opens the block as
+`~/scratch/snippet.py` for you to change and run.
+
+| Command                | What it does                                      |
+| ---------------------- | ------------------------------------------------- |
+| `edit <file>`          | create or change a file (also `nano`, `vi`, `vim`) |
+| `python <file>`        | run a script                                      |
+| `cat <file>`           | print a file                                      |
+| `touch <file>`         | create an empty file                              |
+| `cp <source> <target>` | copy a file, or the markdown of a page, into the folder |
+| `mv <source> <target>` | rename a file                                     |
+| `rm <file>`            | delete a file                                     |
+
+With `pyodide`, the files are on disk while Python runs. A script can
+`import` another one, read a file with `open()`, and anything it writes
+shows up in `ls` afterwards:
+
+```python
+with open("notes.txt", "w") as f:
+    f.write("written by a script\n")
+```
+
+With `monty` scripts run too, but they have no access to the other files.
+
+> [!IMPORTANT]
+> Scratch files never leave your browser. They are not uploaded to the site,
+> other visitors cannot see them, and they are gone if you clear the site's
+> data. Copy out anything you want to keep.
+
+The folder is flat (no subfolders) and small: up to 100 files, 256 KB each,
+1 MB in total. Everything outside it is read-only.
+
 ## Download on demand
 
 Nothing of the interpreter is downloaded when the site opens. The download

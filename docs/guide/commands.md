@@ -21,16 +21,26 @@ clickable too, so the site can be browsed without typing at all.
 | `posts`                        | lists posts, newest first                      |
 | `tags`                         | lists the tags                                 |
 | `tag <name>`                   | lists the pages carrying a tag                 |
-| `python [-c code]`             | opens the [Python REPL](python.md), if the site enables it |
+| `python [file \| -c code]`     | opens the [Python REPL](python.md) or runs a script, if the site enables it |
+| `edit <file>`                  | writes a file in your [scratch folder](python.md#scripts-and-the-editor) (also `nano`, `vi`, `vim`) |
+| `touch`, `cp`, `mv`, `rm`      | manage scratch files                           |
 | `theme [name]`                 | lists the [themes](themes.md) or switches to one |
 | `history`                      | shows the commands typed so far                |
 | `clear`                        | clears the screen                              |
+| `exit`                         | starts over: home page, empty screen, fresh session |
 
 ## Shortcuts
 
 - <kbd>Tab</kbd> completes commands, paths, tags and themes
 - <kbd>↑</kbd> and <kbd>↓</kbd> walk the history
 - <kbd>Ctrl</kbd>+<kbd>L</kbd> clears the screen and <kbd>Ctrl</kbd>+<kbd>C</kbd> discards the line
+
+## Starting over
+
+`exit` is a restart. It loads the home page again with an empty screen,
+forgets the command history and ends any Python session, so variables are
+lost. Your scratch files and the theme you chose are kept. Inside the Python
+REPL, `exit()` only leaves the REPL.
 
 ## On a phone
 

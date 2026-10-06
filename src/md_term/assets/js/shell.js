@@ -6,6 +6,12 @@ import { basename, display, join, quote, resolve, tokenize } from "./vfs.js";
 
 const MAX_MATCHES = 200;
 
+// Limits of the visitor's scratch files, which live in their browser's storage.
+const MAX_FILE_BYTES = 256 * 1024;
+const MAX_TOTAL_BYTES = 1024 * 1024;
+const MAX_FILES = 100;
+const byteLength = (content) => new TextEncoder().encode(content).length;
+
 const text = (value, cls) => ({ type: "text", text: value, cls });
 const error = (value) => ({ type: "error", text: value });
 
@@ -14,9 +20,9 @@ const COMMANDS = {
     usage: "help",
     summary: "show this list",
     run(shell) {
-      const rows = Object.entries(COMMANDS)
-        .filter(([name]) => name !== "python" || shell.python)
-        .map(([, { usage, summary }]) => ({ usage, summary }));
+      const rows = Object.values(COMMANDS)
+        .filter((command) => shell.has(command))
+        .map(({ usage, summary }) => ({ usage, summary }));
       return {
         out: [
           { type: "help", rows },
@@ -97,10 +103,14 @@ const COMMANDS = {
     summary: "read a page (alias: open)",
     run(shell, args, name = "cat") {
       if (!args.length) return { out: [error(`usage: ${name} <file>`)] };
-      let path = resolve(shell.cwd, args[0]);
+      let path = shell.locate(args[0]);
       let node = shell.nodes[path];
       if (!node && shell.nodes[path + ".md"]) node = shell.nodes[(path += ".md")];
       if (!node) return fail(name, args[0], "No such file or directory");
+      if (node.local) {
+        const content = shell.readFile(path);
+        return { out: content ? [text(content.replace(/\n$/, ""))] : [] };
+      }
       if (node.type === "dir") {
         path = join(path, "index.md");
         if (!shell.nodes[path]) return fail(name, args[0], "Is a directory");
@@ -192,15 +202,114 @@ const COMMANDS = {
   },
 
   python: {
-    usage: "python [-c code]",
-    summary: "start a Python REPL, or run one line of code",
+    usage: "python [file | -c code]",
+    summary: "start a Python REPL, or run a script or one line of code",
+    needs: "python",
     run(shell, args) {
-      if (!shell.python) return { out: [error("python: not enabled on this site")] };
       if (args[0] === "-c" && args.length > 1) {
         return { out: [], python: { code: args.slice(1).join(" ") } };
       }
-      if (args.length) return { out: [error("usage: python [-c code]")] };
-      return { out: [], python: { repl: true } };
+      if (!args.length) return { out: [], python: { repl: true } };
+      if (args.length > 1 || args[0].startsWith("-")) {
+        return { out: [error("usage: python [file | -c code]")] };
+      }
+      const path = shell.locate(args[0]);
+      const node = shell.nodes[path];
+      if (!node) return fail("python", args[0], "No such file or directory");
+      if (!node.local) return fail("python", args[0], "not a script (pages cannot be run)");
+      return { out: [], python: { code: shell.readFile(path), filename: basename(path) } };
+    },
+  },
+
+  edit: {
+    usage: "edit <file>",
+    summary: "write a file in your scratch folder (aliases: nano, vi, vim)",
+    needs: "scratch",
+    run(shell, args, name = "edit") {
+      if (args.length !== 1) return { out: [error(`usage: ${name} <file>`)] };
+      const path = shell.locate(args[0]);
+      const node = shell.nodes[path];
+      if (node?.type === "dir") return fail(name, args[0], "Is a directory");
+      if (node && !node.local) {
+        const hint = `cp ${args[0]} ${display(shell.scratch)}/`;
+        return fail(name, args[0], `Read-only file (copy it first: ${hint})`);
+      }
+      const problem = shell.checkWritable(path);
+      if (problem) return fail(name, args[0], problem);
+      return { out: [], edit: path };
+    },
+  },
+
+  touch: {
+    usage: "touch <file>",
+    summary: "create an empty scratch file",
+    needs: "scratch",
+    run(shell, args) {
+      if (!args.length) return { out: [error("usage: touch <file>")] };
+      for (const arg of args) {
+        const path = shell.locate(arg);
+        if (shell.nodes[path]?.local) continue;
+        const problem = shell.nodes[path] ? "Read-only file system" : shell.writeFile(path, "");
+        if (problem) return fail("touch", arg, problem);
+      }
+      return { out: [] };
+    },
+  },
+
+  cp: {
+    usage: "cp <source> <target>",
+    summary: "copy a file, or the text of a page, into your scratch folder",
+    needs: "scratch",
+    async run(shell, args) {
+      if (args.length !== 2) return { out: [error("usage: cp <source> <target>")] };
+      let source = shell.locate(args[0]);
+      if (!shell.nodes[source] && shell.nodes[source + ".md"]) source += ".md";
+      const node = shell.nodes[source];
+      if (!node) return fail("cp", args[0], "No such file or directory");
+      if (node.type === "dir") return fail("cp", args[0], "Is a directory");
+      let content = shell.readFile(source);
+      if (content === undefined) {
+        content = (await shell.loadSearch()).find((doc) => doc.path === source)?.text ?? "";
+      }
+      let target = shell.locate(args[1]);
+      if (shell.nodes[target]?.type === "dir") target = join(target, basename(source));
+      const problem = shell.writeFile(target, content);
+      return problem ? fail("cp", args[1], problem) : { out: [] };
+    },
+  },
+
+  mv: {
+    usage: "mv <source> <target>",
+    summary: "rename a scratch file",
+    needs: "scratch",
+    run(shell, args) {
+      if (args.length !== 2) return { out: [error("usage: mv <source> <target>")] };
+      const source = shell.locate(args[0]);
+      if (!shell.nodes[source]) return fail("mv", args[0], "No such file or directory");
+      if (!shell.nodes[source].local) return fail("mv", args[0], "Read-only file system");
+      let target = shell.locate(args[1]);
+      if (shell.nodes[target]?.type === "dir") target = join(target, basename(source));
+      if (target === source) return { out: [] };
+      const problem = shell.writeFile(target, shell.readFile(source));
+      if (problem) return fail("mv", args[1], problem);
+      shell.removeFile(source);
+      return { out: [] };
+    },
+  },
+
+  rm: {
+    usage: "rm <file>",
+    summary: "delete a scratch file",
+    needs: "scratch",
+    run(shell, args) {
+      if (!args.length) return { out: [error("usage: rm <file>")] };
+      for (const arg of args) {
+        const path = shell.locate(arg);
+        if (!shell.nodes[path]) return fail("rm", arg, "No such file or directory");
+        if (!shell.nodes[path].local) return fail("rm", arg, "Read-only file system");
+        shell.removeFile(path);
+      }
+      return { out: [] };
     },
   },
 
@@ -236,9 +345,24 @@ const COMMANDS = {
     summary: "clear the screen",
     run: () => ({ out: [], clear: true }),
   },
+
+  exit: {
+    usage: "exit",
+    summary: "start over: back to the home page with a fresh session",
+    run: () => ({ out: [], exit: true }),
+  },
 };
 
-const ALIASES = { open: "cat", search: "grep", ll: "ls", dir: "ls" };
+const ALIASES = {
+  open: "cat",
+  search: "grep",
+  ll: "ls",
+  dir: "ls",
+  nano: "edit",
+  vi: "edit",
+  vim: "edit",
+  logout: "exit",
+};
 
 function list(items) {
   return { type: "list", items };
@@ -283,14 +407,105 @@ export function createShell({
   themes = [],
   theme = themes[0],
   python = false,
+  scratch = false,
+  storage = null, // { read() → {name: content}, write({name: content}) }; null keeps files in memory
   loadSearch = async () => [],
 }) {
+  // The scratch folder is the one writable place: a flat folder of the
+  // visitor's own files, mounted next to the site's pages.
+  const mount = !scratch ? null : nodes["/scratch"] ? "/.scratch" : "/scratch";
+  const local = new Map();
+  if (mount) {
+    // Listed with the other folders, which come before the files.
+    const children = [...nodes["/"].children];
+    const firstFile = children.findIndex((name) => nodes[join("/", name)].type === "file");
+    children.splice(firstFile === -1 ? children.length : firstFile, 0, basename(mount));
+    nodes = { ...nodes, "/": { ...nodes["/"], children } };
+    nodes[mount] = { type: "dir", url: null, local: true, children: [] };
+  }
+  const refresh = () => {
+    for (const path of Object.keys(nodes)) if (nodes[path].local && path !== mount) delete nodes[path];
+    for (const [name, content] of local) {
+      nodes[join(mount, name)] = { type: "file", url: null, local: true, size: byteLength(content) };
+    }
+    nodes[mount].children = [...local.keys()].sort();
+  };
+  const persist = () => storage?.write(Object.fromEntries(local));
+  const nameOf = (path) =>
+    mount && path.startsWith(mount + "/") && !path.slice(mount.length + 1).includes("/")
+      ? path.slice(mount.length + 1)
+      : null;
+  if (mount) {
+    for (const [name, content] of Object.entries(storage?.read() ?? {})) {
+      if (typeof content === "string") local.set(name, content);
+    }
+    refresh();
+  }
+
   const shell = {
     nodes,
     tags,
     themes,
     theme,
     python,
+    scratch: mount,
+
+    has: (command) => !command.needs || Boolean(shell[command.needs]),
+
+    // Like resolve(), but a bare name that is not here falls back to the
+    // scratch folder, so `edit notes.py` works from anywhere.
+    locate(arg) {
+      const path = resolve(shell.cwd, arg);
+      if (nodes[path] || !mount || arg.includes("/")) return path;
+      if (nodes[path + ".md"]) return path;
+      return join(mount, arg);
+    },
+
+    readFile: (path) => local.get(nameOf(path) ?? ""),
+
+    // Why `path` cannot be written, or null if it can.
+    checkWritable(path, content = "") {
+      const name = nameOf(path);
+      if (!name) return `Read-only file system (files live in ${display(mount ?? "/")})`;
+      const size = byteLength(content);
+      if (size > MAX_FILE_BYTES) return "File too large";
+      let total = size;
+      for (const [other, text] of local) if (other !== name) total += byteLength(text);
+      if (total > MAX_TOTAL_BYTES || (!local.has(name) && local.size >= MAX_FILES)) {
+        return "No space left on device";
+      }
+      return null;
+    },
+
+    // Returns the reason it failed, or null.
+    writeFile(path, content) {
+      const problem = shell.checkWritable(path, content);
+      if (problem) return problem;
+      local.set(nameOf(path), content);
+      refresh();
+      persist();
+      return null;
+    },
+
+    removeFile(path) {
+      local.delete(nameOf(path));
+      refresh();
+      persist();
+    },
+
+    // The scratch files as {name: content}, and back: Python runs with them
+    // on disk and may change, create or delete any.
+    exportFiles: () => Object.fromEntries(local),
+    importFiles(files) {
+      local.clear();
+      for (const [name, content] of Object.entries(files)) {
+        if (!name.includes("/") && !shell.checkWritable(join(mount, name), content)) {
+          local.set(name, content);
+        }
+      }
+      refresh();
+      persist();
+    },
     cwd: nodes[cwd]?.type === "dir" ? cwd : "/",
     history: [],
     loadSearch,
@@ -301,7 +516,9 @@ export function createShell({
 
     fileItem(path, label) {
       const node = nodes[path];
-      const meta = [node.date, node.title].filter(Boolean).join(" ");
+      const meta = node.local
+        ? `${node.size} B`
+        : [node.date, node.title].filter(Boolean).join(" ");
       return { label, path, kind: "file", meta };
     },
 
@@ -312,6 +529,9 @@ export function createShell({
       const command = COMMANDS[ALIASES[name] ?? name];
       if (!command) {
         return { out: [error(`${name}: command not found (try 'help')`)] };
+      }
+      if (!shell.has(command)) {
+        return { out: [error(`${name}: not enabled on this site`)] };
       }
       return command.run(shell, args, name);
     },
@@ -328,7 +548,7 @@ export function createShell({
       if (tokens.length === 0 || (tokens.length === 1 && !fresh)) {
         const names = [...Object.keys(COMMANDS), ...Object.keys(ALIASES)];
         candidates = names
-          .filter((name) => name.startsWith(word) && (name !== "python" || python))
+          .filter((name) => name.startsWith(word) && shell.has(COMMANDS[ALIASES[name] ?? name]))
           .map((name) => name + " ");
       } else if ((ALIASES[tokens[0]] ?? tokens[0]) === "tag") {
         const lower = word.toLowerCase();
