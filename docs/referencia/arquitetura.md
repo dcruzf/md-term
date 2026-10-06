@@ -20,7 +20,7 @@ site/
 ├── assets/
 │   ├── term.css               tema
 │   ├── js/                    shell do navegador
-│   └── python/                interpretador Python, só com python = true
+│   └── python/                interpretador Python, quando ativado
 ├── fs.json                    árvore de arquivos para o shell
 ├── search.json                texto de todas as páginas, para o grep
 └── feed.xml                   RSS, quando há posts e site_url

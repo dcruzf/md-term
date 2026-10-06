@@ -1,8 +1,12 @@
-"""Installs the in-browser Python runtime (Monty) into a built site.
+"""Installs the in-browser Python runtime into a built site.
 
-The JavaScript glue is vendored in ``runtimes/monty``. The WebAssembly modules
-are too large for that, so they are downloaded once from the npm registry,
-verified against pinned hashes and kept in the user's cache directory.
+Two runtimes are supported, each described by ``runtimes/<name>/runtime.json``:
+
+* ``monty``: the JavaScript glue is vendored; the WebAssembly modules are too
+  large for that, so they are downloaded once from the npm registry, verified
+  against pinned hashes and kept in the user's cache directory.
+* ``pyodide``: loaded by the visitor's browser from a CDN. Only a small worker
+  script is copied into the site.
 """
 
 from __future__ import annotations
@@ -23,12 +27,15 @@ from .config import MdTermError
 log = logging.getLogger("md_term")
 
 
-def _spec_dir() -> Path:
-    return Path(str(resources.files("md_term") / "runtimes" / "monty"))
+RUNTIMES = ("monty", "pyodide")
 
 
-def load_spec() -> dict:
-    return json.loads((_spec_dir() / "runtime.json").read_text(encoding="utf-8"))
+def _spec_dir(name: str) -> Path:
+    return Path(str(resources.files("md_term") / "runtimes" / name))
+
+
+def load_spec(name: str = "monty") -> dict:
+    return json.loads((_spec_dir(name) / "runtime.json").read_text(encoding="utf-8"))
 
 
 def cache_dir() -> Path:
@@ -99,21 +106,29 @@ def ensure_cached(spec: dict) -> Path:
     return dest
 
 
-def install(target: Path) -> dict:
-    """Copies the runtime into `target` and returns the manifest written there."""
-    spec = load_spec()
-    cached = ensure_cached(spec)
+def install(target: Path, runtime: str, packages: list[str]) -> dict:
+    """Copies `runtime` into `target` and returns the manifest written there."""
+    spec = load_spec(runtime)
     target.mkdir(parents=True, exist_ok=True)
-    for name in spec["glue"]:
-        shutil.copyfile(_spec_dir() / name, target / name)
-    for name in spec["files"]:
-        shutil.copyfile(cached / name, target / name)
-    manifest = {
-        "runtime": spec["name"],
-        "version": spec["version"],
-        "glue": spec["glue"][0],
-        "worker": spec["glue"][1],
-        "files": {name: info["size"] for name, info in spec["files"].items()},
-    }
+    manifest = {"runtime": spec["name"], "version": spec["version"]}
+    if runtime == "pyodide":
+        shutil.copyfile(_spec_dir(runtime) / spec["worker"], target / spec["worker"])
+        manifest |= {
+            "url": spec["url"],
+            "worker": spec["worker"],
+            "packages": packages,
+            "files": spec["files"],
+        }
+    else:
+        cached = ensure_cached(spec)
+        for name in spec["glue"]:
+            shutil.copyfile(_spec_dir(runtime) / name, target / name)
+        for name in spec["files"]:
+            shutil.copyfile(cached / name, target / name)
+        manifest |= {
+            "glue": spec["glue"][0],
+            "worker": spec["glue"][1],
+            "files": {name: info["size"] for name, info in spec["files"].items()},
+        }
     (target / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     return manifest

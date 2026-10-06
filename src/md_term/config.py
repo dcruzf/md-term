@@ -14,6 +14,9 @@ COLOR_KEYS = ("bg", "bg_raised", "fg", "fg_bright", "fg_dim", "line", "alert", "
 # Placeholders accepted in `ps1`. The browser shell fills the same ones (vfs.js).
 PS1_FIELDS = ("user", "host", "path", "dir")
 PS1_FIELD = re.compile(r"\{(\w*)\}")
+PYTHON_RUNTIMES = ("monty", "pyodide")
+# A package name with an optional version specifier, as micropip accepts.
+_REQUIREMENT = re.compile(r"[A-Za-z0-9][\w.\-\[\],]*([=<>!~]=?[\w.*,=<>!~]+)?")
 _CSS_VALUE = re.compile(r"[#\w(),.%/\s-]+")
 
 
@@ -37,7 +40,8 @@ class Config:
     theme: str = THEMES[0]
     colors: dict[str, str] = field(default_factory=dict)
     extra_css: list[str] = field(default_factory=list)
-    python: bool = False
+    python: str = ""  # "" (off), "monty" or "pyodide"; `true` in the TOML means "monty"
+    python_packages: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.theme not in THEMES:
@@ -47,6 +51,18 @@ class Config:
                 raise MdTermError(f"unknown color '{key}' (choose from: {', '.join(COLOR_KEYS)})")
             if not _CSS_VALUE.fullmatch(value):
                 raise MdTermError(f"color '{key}' is not a valid CSS color: {value!r}")
+        if self.python is True:
+            self.python = "monty"
+        elif self.python is False:
+            self.python = ""
+        if self.python not in ("", *PYTHON_RUNTIMES):
+            choices = ", ".join(f'"{name}"' for name in PYTHON_RUNTIMES)
+            raise MdTermError(f"'python' must be true, false or one of: {choices}")
+        if self.python_packages and self.python != "pyodide":
+            raise MdTermError("'python_packages' requires python = \"pyodide\"")
+        for package in self.python_packages:
+            if not _REQUIREMENT.fullmatch(package):
+                raise MdTermError(f"invalid entry in python_packages: {package!r}")
         if not self.ps1.strip():
             raise MdTermError("'ps1' must not be empty")
         for name in PS1_FIELD.findall(self.ps1):
@@ -98,11 +114,12 @@ def load_config(path: Path) -> Config:
         if key == "colors":
             valid = isinstance(value, dict) and all(isinstance(v, str) for v in value.values())
             expected = "a table of strings"
-        elif key == "extra_css":
+        elif key in ("extra_css", "python_packages"):
             valid = isinstance(value, list) and all(isinstance(v, str) for v in value)
             expected = "a list of strings"
         elif key == "python":
-            valid, expected = isinstance(value, bool), "true or false"
+            valid = isinstance(value, bool | str)
+            expected = 'true, false, "monty" or "pyodide"'
         else:
             valid, expected = isinstance(value, str), "a string"
         if not valid:

@@ -44,7 +44,8 @@ Em TOML, as opções simples precisam vir antes de qualquer tabela como
 | `theme`       | `phosphor`  | tema de cores: `phosphor`, `amber`, `ice`, `mono`, `dracula` ou `paper` |
 | `[colors]`    | vazio       | cores que substituem as do tema                 |
 | `extra_css`   | vazio       | folhas de estilo de `docs/` carregadas depois da padrão |
-| `python`      | `false`     | ativa o [Python no navegador](python.md)        |
+| `python`      | `false`     | [Python no navegador](python.md): `true`, `"monty"` ou `"pyodide"` |
+| `python_packages` | vazio   | pacotes pré-instalados, só com `"pyodide"`      |
 
 Uma opção desconhecida ou com o tipo errado interrompe o build com uma
 mensagem dizendo qual é.
@@ -85,5 +86,5 @@ Temas, cores, fonte e efeitos têm uma página própria:
 ## Caminhos reservados
 
 O build gera `tags/`, `fs.json`, `search.json` e `feed.xml`. Arquivos de
-`docs/` com esses nomes causam erro. Com `python = true`, ele também escreve
+`docs/` com esses nomes causam erro. Com o Python ativado, ele também escreve
 em `assets/python/`.

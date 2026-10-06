@@ -218,7 +218,7 @@ def fake_runtime(tmp_path: Path, monkeypatch):
             for name, data in payload.items()
         },
     }
-    monkeypatch.setattr(python_runtime, "load_spec", lambda: spec)
+    monkeypatch.setattr(python_runtime, "load_spec", lambda name="monty": spec)
     monkeypatch.setenv("MD_TERM_CACHE", str(tmp_path / "cache"))
     return spec, archive
 
@@ -231,7 +231,7 @@ def test_python_is_off_by_default(project: Config):
 
 def test_python_runtime_is_installed_and_cached(project: Config, fake_runtime):
     _, archive = fake_runtime
-    project.python = True
+    project.python = "monty"
     build(project)
     target = project.site_path / "assets" / "python"
     manifest = json.loads((target / "manifest.json").read_text())
@@ -250,7 +250,7 @@ def test_python_runtime_is_installed_and_cached(project: Config, fake_runtime):
 def test_python_runtime_rejects_tampered_download(project: Config, fake_runtime):
     spec, _ = fake_runtime
     spec["files"]["core.wasm"]["sha256"] = "0" * 64
-    project.python = True
+    project.python = "monty"
     with pytest.raises(MdTermError, match="checksum mismatch for core.wasm"):
         build(project)
 
@@ -258,7 +258,7 @@ def test_python_runtime_rejects_tampered_download(project: Config, fake_runtime)
 def test_python_runtime_download_failure(project: Config, fake_runtime):
     _, archive = fake_runtime
     archive.unlink()
-    project.python = True
+    project.python = "monty"
     with pytest.raises(MdTermError, match="could not download the Python runtime"):
         build(project)
 
@@ -287,6 +287,40 @@ def test_ps1_rejects_unknown_placeholders(tmp_path: Path):
     for text, message in [
         ('ps1 = "{date} $"', "unknown placeholder '{date}'"),
         ('ps1 = " "', "must not be empty"),
+    ]:
+        path.write_text(text + "\n")
+        with pytest.raises(MdTermError, match=message):
+            load_config(path)
+
+
+def test_pyodide_runtime_needs_no_download(project: Config, monkeypatch):
+    monkeypatch.setattr(python_runtime, "ensure_cached", lambda spec: pytest.fail("no download"))
+    project.python = "pyodide"
+    project.python_packages = ["numpy", "rich==13.7.0"]
+    build(project)
+    target = project.site_path / "assets" / "python"
+    manifest = json.loads((target / "manifest.json").read_text())
+    assert manifest["runtime"] == "pyodide" and manifest["worker"] == "pyodide.worker.js"
+    assert manifest["url"].startswith("https://") and manifest["version"] in manifest["url"]
+    assert manifest["packages"] == ["numpy", "rich==13.7.0"]
+    assert sorted(p.name for p in target.iterdir()) == ["manifest.json", "pyodide.worker.js"]
+
+
+def test_python_option_values(tmp_path: Path):
+    path = tmp_path / "md-term.toml"
+    for text, expected in [
+        ("python = true", "monty"),
+        ("python = false", ""),
+        ('python = "monty"', "monty"),
+        ('python = "pyodide"\npython_packages = ["numpy"]', "pyodide"),
+    ]:
+        path.write_text(text + "\n")
+        assert load_config(path).python == expected
+    for text, message in [
+        ('python = "cpython"', "'python' must be"),
+        ("python = 3", "option 'python' must be"),
+        ('python = true\npython_packages = ["numpy"]', "requires python"),
+        ('python = "pyodide"\npython_packages = ["bad name; x"]', "invalid entry"),
     ]:
         path.write_text(text + "\n")
         with pytest.raises(MdTermError, match=message):

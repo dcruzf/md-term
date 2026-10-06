@@ -9,8 +9,8 @@ blog com `ls`, `cd`, `cat` e `grep`.
 - Com JavaScript, a página ganha um prompt com histórico, autocompletar e
   busca full-text. Tudo o que é listado também é clicável.
 - Posts com data, tags e feed RSS.
-- Python opcional no navegador (REPL e blocos executáveis), com o
-  interpretador Monty em WebAssembly baixado só quando o visitante o usa.
+- Python opcional no navegador (REPL e blocos executáveis), baixado só quando
+  o visitante o usa: Monty (leve) ou Pyodide (CPython completo, com pacotes).
 - Seis temas de cores (`phosphor`, `amber`, `ice`, `mono`, `dracula`, `paper`) e paleta
   configurável no `md-term.toml`.
 

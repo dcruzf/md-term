@@ -8,6 +8,8 @@
 //       echo: treat a single line like the REPL does and return its repr
 //   interrupt()                stop the running code; the session restarts
 //
+// A loader receives (base, manifest, { onProgress(loaded, total), onStatus(text) }).
+//
 // To add another runtime, write a loader like `loadMonty` and register it in
 // RUNTIMES under the name the build puts in the manifest.
 
@@ -52,7 +54,7 @@ function unwrap(traceback, line) {
   return lines.join("\n");
 }
 
-async function loadMonty(base, manifest, onProgress) {
+async function loadMonty(base, manifest, { onProgress }) {
   const modules = await fetchModules(base, manifest.files, onProgress);
   const glue = await import(new URL(manifest.glue, base).href);
   const workerUrl = new URL(manifest.worker, base);
@@ -117,15 +119,81 @@ async function loadMonty(base, manifest, onProgress) {
   };
 }
 
-const RUNTIMES = { monty: loadMonty };
+// Pyodide runs in our own worker (assets/python/pyodide.worker.js), which loads
+// it from the CDN in the manifest. Interrupting means terminating that worker;
+// the next run boots a new one, served from the browser cache.
+async function loadPyodide(base, manifest, { onProgress, onStatus }) {
+  const total = Object.values(manifest.files).reduce((sum, size) => sum + size, 0);
+  let worker = null;
+  let label = "";
+  let current = null; // { onPrint, resolve } of the run in progress
 
-export async function loadPython(base, onProgress) {
+  const boot = (progress, status) =>
+    new Promise((resolve, reject) => {
+      worker = new Worker(new URL(manifest.worker, base), { type: "module" });
+      const fail = (message) => {
+        worker.terminate();
+        worker = null;
+        reject(new Error(message));
+      };
+      worker.onerror = (event) => fail(event.message || "the Python worker failed to start");
+      worker.onmessage = ({ data }) => {
+        if (data.type === "progress") progress(Math.min(data.loaded, total), total);
+        else if (data.type === "status") status(data.text);
+        else if (data.type === "fatal") fail(data.error);
+        else if (data.type === "ready") {
+          label = data.label;
+          resolve();
+        } else if (data.type === "print") current?.onPrint(data.text, data.stream);
+        else if (data.type === "done") current?.resolve(data);
+      };
+      worker.postMessage({ type: "init", url: manifest.url, packages: manifest.packages ?? [] });
+    });
+  await boot(onProgress, onStatus);
+
+  return {
+    get label() {
+      return label;
+    },
+
+    async run(code, { echo = false, onPrint = () => {} } = {}) {
+      if (!worker) {
+        onPrint("(restarting Python…)\n", "stderr");
+        try {
+          await boot(() => {}, () => {});
+        } catch (err) {
+          return { error: `could not restart Python: ${err.message}` };
+        }
+      }
+      try {
+        const result = await new Promise((resolve) => {
+          current = { onPrint, resolve };
+          worker.postMessage({ type: "run", code, echo });
+        });
+        return { value: result.value ?? null, error: result.error, restarted: result.restarted };
+      } finally {
+        current = null;
+      }
+    },
+
+    async interrupt() {
+      if (!current) return;
+      worker.terminate();
+      worker = null;
+      current.resolve({ error: "KeyboardInterrupt", restarted: true });
+    },
+  };
+}
+
+const RUNTIMES = { monty: loadMonty, pyodide: loadPyodide };
+
+export async function loadPython(base, callbacks) {
   const response = await fetch(new URL("manifest.json", base));
   if (!response.ok) throw new Error(`manifest.json: HTTP ${response.status}`);
   const manifest = await response.json();
   const load = RUNTIMES[manifest.runtime];
   if (!load) throw new Error(`unknown Python runtime '${manifest.runtime}'`);
-  return load(base, manifest, onProgress);
+  return load(base, manifest, callbacks);
 }
 
 // Whether a REPL line opens a block that needs more lines before it can run.

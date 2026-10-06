@@ -145,7 +145,7 @@ def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> 
 
     _copy_assets(out / "assets")
     if config.python:
-        install_python(out / "assets" / "python")
+        install_python(out / "assets" / "python", config.python, config.python_packages)
     for src in site.static:
         target = out / src
         target.parent.mkdir(parents=True, exist_ok=True)

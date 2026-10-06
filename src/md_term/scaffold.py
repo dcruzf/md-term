@@ -25,7 +25,8 @@ motd = "Welcome. Type 'help' or click a command above."
 theme = "phosphor"
 
 # Python REPL and runnable code blocks, running in the visitor's browser.
-# python = true
+# "monty" is light and fast; "pyodide" is full CPython and can install packages.
+# python = "monty"
 
 # Override individual colors of the theme.
 # [colors]

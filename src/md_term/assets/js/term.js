@@ -181,15 +181,20 @@ async function getRuntime(entry) {
     entry.append(line);
     form.scrollIntoView({ block: "nearest" });
     let shown = -1;
-    python = loadPython(pythonBase, (loaded, total) => {
-      const percent = Math.floor((100 * loaded) / total);
-      if (percent === shown) return;
-      shown = percent;
-      const filled = Math.floor(percent / 5);
-      const bar = "#".repeat(filled) + ".".repeat(20 - filled);
-      line.textContent =
-        `Downloading Python [${bar}] ${String(percent).padStart(3)}%  ` +
-        `${megabytes(loaded)}/${megabytes(total)} MB`;
+    python = loadPython(pythonBase, {
+      onProgress(loaded, total) {
+        const percent = Math.floor((100 * loaded) / total);
+        if (percent === shown) return;
+        shown = percent;
+        const filled = Math.floor(percent / 5);
+        const bar = "#".repeat(filled) + ".".repeat(20 - filled);
+        line.textContent =
+          `Downloading Python [${bar}] ${String(percent).padStart(3)}%  ` +
+          `${megabytes(loaded)}/${megabytes(total)} MB`;
+      },
+      onStatus(text) {
+        line.textContent = text;
+      },
     }).finally(() => line.remove());
   }
   try {
