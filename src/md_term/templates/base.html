@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ config.lang }}" data-base="{{ base }}" data-user="{{ config.user }}" data-host="{{ config.host }}" data-cwd="{{ cwd }}">
+<html lang="{{ config.lang }}" data-base="{{ base }}" data-user="{{ config.user }}" data-host="{{ config.host }}" data-cwd="{{ cwd }}" data-theme="{{ config.theme }}" data-themes="{{ themes|join(' ') }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +8,25 @@
 <meta name="description" content="{{ description }}">
 {% endif %}
 <link rel="stylesheet" href="{{ base }}assets/term.css">
+{% for css in config.extra_css %}
+<link rel="stylesheet" href="{{ href(css) }}">
+{% endfor %}
+{% if colors %}
+<style>
+:root[data-theme="{{ config.theme }}"] {
+{% for name, value in colors.items() %}
+  --{{ name }}: {{ value }};
+{% endfor %}
+}
+</style>
+{% endif %}
+<script>
+/* Apply the theme the visitor picked with the `theme` command before first paint. */
+try {
+  var saved = localStorage.getItem("md-term:theme"), el = document.documentElement;
+  if (saved && el.dataset.themes.split(" ").includes(saved)) el.dataset.theme = saved;
+} catch (e) {}
+</script>
 {% if has_feed %}
 <link rel="alternate" type="application/rss+xml" title="{{ config.site_name }}" href="{{ base }}feed.xml">
 {% endif %}
@@ -26,6 +45,7 @@
     <a class="js-only" href="{{ base }}" data-cmd="tree">tree</a>
     <a class="js-only" href="{{ base }}" data-cmd="posts">posts</a>
     <a href="{{ base }}tags/" data-cmd="tags">tags</a>
+    <a class="js-only" href="{{ base }}" data-cmd="theme">theme</a>
     <a class="js-only" href="{{ base }}" data-cmd="clear">clear</a>
     {% if has_feed %}
     <a class="feed" href="{{ base }}feed.xml">rss</a>

@@ -21,12 +21,13 @@ que um comando lista também é clicável, então dá para navegar sem digitar n
 | `posts`                  | lista os posts, do mais novo ao mais antigo     |
 | `tags`                   | lista as tags                                   |
 | `tag <nome>`             | lista as páginas de uma tag                     |
+| `theme [nome]`           | lista os [temas](temas.md) ou troca de tema     |
 | `history`                | mostra os comandos já digitados                 |
 | `clear`                  | limpa a tela                                    |
 
 ## Atalhos
 
-- `Tab` completa comandos, caminhos e tags
+- `Tab` completa comandos, caminhos, tags e temas
 - `↑` e `↓` percorrem o histórico
 - `Ctrl+L` limpa a tela e `Ctrl+C` descarta a linha
 

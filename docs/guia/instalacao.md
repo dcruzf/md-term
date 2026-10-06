@@ -39,4 +39,6 @@ raiz de um domínio quanto em um subcaminho como `usuario.github.io/projeto/`.
 | `md-term serve` | servidor local com recarga automática         |
 | `md-term build` | gera o site estático (`--drafts` inclui rascunhos) |
 
+Os detalhes de cada comando estão na [referência da linha de comando](../referencia/cli.md).
+
 Próximo passo: [escrever páginas](escrevendo.md).

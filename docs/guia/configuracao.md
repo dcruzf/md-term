@@ -17,7 +17,16 @@ lang = "pt-BR"
 user = "visitante"
 host = "meu-site"
 motd = "Bem-vindo. Digite 'help'."
+
+theme = "amber"
+extra_css = ["assets/custom.css"]
+
+[colors]
+alert = "#ff3b3b"
 ```
+
+Em TOML, as opções simples precisam vir antes de qualquer tabela como
+`[colors]`.
 
 | Opção         | Padrão      | Para que serve                                  |
 | ------------- | ----------- | ----------------------------------------------- |
@@ -30,12 +39,17 @@ motd = "Bem-vindo. Digite 'help'."
 | `user`        | `guest`     | usuário mostrado no prompt                      |
 | `host`        | do nome     | máquina mostrada no prompt                      |
 | `motd`        | vazio       | mensagem exibida na página inicial              |
+| `theme`       | `phosphor`  | tema de cores: `phosphor`, `amber`, `ice`, `mono` ou `paper` |
+| `[colors]`    | vazio       | cores que substituem as do tema                 |
+| `extra_css`   | vazio       | folhas de estilo de `docs/` carregadas depois da padrão |
+
+Uma opção desconhecida ou com o tipo errado interrompe o build com uma
+mensagem dizendo qual é.
 
 ## Aparência
 
-As cores e a fonte são variáveis CSS em `assets/term.css`. Para mudar o
-tema, coloque um `docs/assets/term.css` próprio: ele substitui o original
-no build.
+Temas, cores, fonte e efeitos têm uma página própria:
+[Temas e cores](temas.md).
 
 ## Caminhos reservados
 

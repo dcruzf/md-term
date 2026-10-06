@@ -189,6 +189,25 @@ const COMMANDS = {
     },
   },
 
+  theme: {
+    usage: "theme [name]",
+    summary: "list the color themes, or switch to one",
+    run(shell, args) {
+      if (!args.length) {
+        const items = shell.themes.map((name) => ({
+          label: name,
+          kind: name === shell.theme ? "theme current" : "theme",
+          cmd: `theme ${name}`,
+          meta: name === shell.theme ? "(current)" : "",
+        }));
+        return { out: [list(items)] };
+      }
+      if (!shell.themes.includes(args[0])) return fail("theme", args[0], "no such theme");
+      shell.theme = args[0];
+      return { out: [text(`theme set to ${args[0]}`, "dim")], theme: args[0] };
+    },
+  },
+
   history: {
     usage: "history",
     summary: "show the commands typed so far",
@@ -242,10 +261,19 @@ function commonPrefix(words) {
   return prefix;
 }
 
-export function createShell({ nodes, tags = {}, cwd = "/", loadSearch = async () => [] }) {
+export function createShell({
+  nodes,
+  tags = {},
+  cwd = "/",
+  themes = [],
+  theme = themes[0],
+  loadSearch = async () => [],
+}) {
   const shell = {
     nodes,
     tags,
+    themes,
+    theme,
     cwd: nodes[cwd]?.type === "dir" ? cwd : "/",
     history: [],
     loadSearch,
@@ -288,6 +316,8 @@ export function createShell({ nodes, tags = {}, cwd = "/", loadSearch = async ()
         candidates = Object.keys(tags)
           .filter((name) => name.toLowerCase().startsWith(lower))
           .map((name) => quote(name) + " ");
+      } else if (tokens[0] === "theme") {
+        candidates = themes.filter((name) => name.startsWith(word)).map((name) => name + " ");
       } else {
         const slash = word.lastIndexOf("/");
         const dirPart = word.slice(0, slash + 1);

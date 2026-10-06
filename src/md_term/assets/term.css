@@ -1,4 +1,17 @@
-/* md-term: phosphor terminal theme. Override the variables to re-skin it. */
+/* md-term terminal theme.
+ *
+ * Every color comes from the variables below. A theme is a block that
+ * redefines them; the presets follow, and `theme` in md-term.toml picks one.
+ *
+ *   --bg         page background
+ *   --bg-raised  code blocks and the glow behind the page
+ *   --fg         body text
+ *   --fg-bright  headings, links, commands, emphasis
+ *   --fg-dim     prompt, metadata, punctuation
+ *   --line       rules and borders
+ *   --alert      errors, search hits, strings in code
+ *   --glow       halo around bright text ("transparent" turns it off)
+ */
 :root {
   --bg: #030b06;
   --bg-raised: #08170d;
@@ -7,11 +20,57 @@
   --fg-dim: #4c9462;
   --line: #17402a;
   --alert: #ffb454;
-  --glow: rgba(77, 255, 136, 0.35);
+  --glow: color-mix(in srgb, var(--fg-bright) 35%, transparent);
+  --scanline: rgba(0, 0, 0, 0.16);
+  --vignette: rgba(0, 0, 0, 0.45);
   --font: "JetBrains Mono", "IBM Plex Mono", "Fira Code", ui-monospace, "SF Mono", Menlo,
     Consolas, "DejaVu Sans Mono", monospace;
   --measure: 88ch;
   color-scheme: dark;
+}
+
+:root[data-theme="amber"] {
+  --bg: #0c0700;
+  --bg-raised: #1a1003;
+  --fg: #f2c078;
+  --fg-bright: #ffb000;
+  --fg-dim: #a3742a;
+  --line: #46300c;
+  --alert: #ff6b4a;
+}
+
+:root[data-theme="ice"] {
+  --bg: #030910;
+  --bg-raised: #081624;
+  --fg: #a9d6f5;
+  --fg-bright: #5cc8ff;
+  --fg-dim: #4f86ad;
+  --line: #173650;
+  --alert: #ffd166;
+}
+
+:root[data-theme="mono"] {
+  --bg: #0a0a0a;
+  --bg-raised: #161616;
+  --fg: #d0d0d0;
+  --fg-bright: #ffffff;
+  --fg-dim: #858585;
+  --line: #333333;
+  --alert: #ffcc66;
+}
+
+:root[data-theme="paper"] {
+  --bg: #f4f1e8;
+  --bg-raised: #e9e5d8;
+  --fg: #2b2b26;
+  --fg-bright: #000000;
+  --fg-dim: #6b6a60;
+  --line: #c9c4b3;
+  --alert: #b3261e;
+  --glow: transparent;
+  --scanline: rgba(0, 0, 0, 0.04);
+  --vignette: rgba(0, 0, 0, 0.08);
+  color-scheme: light;
 }
 
 *,
@@ -29,10 +88,10 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(ellipse at 50% 30%, #07180e 0%, var(--bg) 70%) fixed;
+  background: radial-gradient(ellipse at 50% 30%, var(--bg-raised) 0%, var(--bg) 70%) fixed;
   color: var(--fg);
   font: 15px/1.6 var(--font);
-  text-shadow: 0 0 6px rgba(77, 255, 136, 0.12);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--glow) 35%, transparent);
 }
 
 /* Scanlines and a soft vignette, drawn above everything without eating clicks. */
@@ -43,8 +102,8 @@ body::after {
   pointer-events: none;
   z-index: 10;
   background:
-    repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.16) 2px 3px),
-    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+    repeating-linear-gradient(to bottom, transparent 0 2px, var(--scanline) 2px 3px),
+    radial-gradient(ellipse at center, transparent 55%, var(--vignette) 100%);
 }
 
 ::selection {
@@ -262,7 +321,8 @@ pre.tree {
   text-decoration: none;
 }
 
-a.dir {
+a.dir,
+a.current {
   font-weight: 700;
 }
 
@@ -427,6 +487,16 @@ mark {
 .prose :not(pre) > code::after {
   content: "`";
   color: var(--fg-dim);
+}
+
+/* Inverted links: keep inline code readable on the bright background. */
+.prose a:hover code,
+.prose a:focus-visible code,
+.prose a:hover code::before,
+.prose a:hover code::after,
+.prose a:focus-visible code::before,
+.prose a:focus-visible code::after {
+  color: inherit;
 }
 
 .prose pre {

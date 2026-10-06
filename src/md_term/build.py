@@ -14,7 +14,7 @@ from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from .config import Config, MdTermError
+from .config import THEMES, Config, MdTermError
 from .content import Page, Site, load_site
 from .markdown import make_renderer, render
 
@@ -41,6 +41,10 @@ def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> 
     out = config.site_path
     _prepare_output(config)
 
+    for css in config.extra_css:
+        if css not in site.static:
+            log.warning("extra_css: '%s' not found in %s", css, config.docs_dir)
+
     md = make_renderer()
     for page in site.pages:
         page.html = render(md, page.body, _link_resolver(page, site))
@@ -60,6 +64,8 @@ def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> 
         base = relurl("", url)
         text = env.get_template(template).render(
             config=config,
+            themes=THEMES,
+            colors={key.replace("_", "-"): value for key, value in config.colors.items()},
             base=base,
             has_feed=has_feed,
             livereload=livereload,

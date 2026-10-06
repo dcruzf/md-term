@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from md_term.build import build, relurl
-from md_term.config import Config, MdTermError, load_config
+from md_term.config import THEMES, Config, MdTermError, load_config
 from md_term.content import parse_page
 
 POST = """\
@@ -155,3 +155,39 @@ def test_load_config(tmp_path: Path):
     path.write_text("nope = 1\n")
     with pytest.raises(MdTermError, match="unknown option"):
         load_config(path)
+
+
+def test_every_theme_is_defined_in_the_stylesheet():
+    css = (Path(__file__).parent.parent / "src/md_term/assets/term.css").read_text()
+    for theme in THEMES[1:]:
+        assert f':root[data-theme="{theme}"]' in css
+
+
+def test_theme_colors_and_extra_css(project: Config, caplog):
+    (project.docs_path / "custom.css").write_text("body { font-size: 17px; }")
+    project.theme = "amber"
+    project.colors = {"fg_bright": "#00ff9c", "glow": "transparent"}
+    project.extra_css = ["custom.css", "missing.css"]
+    build(project)
+    post = read(project, "blog/first/index.html")
+    assert 'data-theme="amber"' in post and f'data-themes="{" ".join(THEMES)}"' in post
+    assert ':root[data-theme="amber"] {' in post
+    assert "--fg-bright: #00ff9c;" in post and "--glow: transparent;" in post
+    assert 'href="../../custom.css"' in post
+    assert "extra_css: 'missing.css' not found" in caplog.text
+
+
+def test_config_rejects_bad_theme_and_colors(tmp_path: Path):
+    path = tmp_path / "md-term.toml"
+    for text, message in [
+        ('theme = "neon"', "unknown theme"),
+        ('[colors]\nlink = "#fff"', "unknown color"),
+        ('[colors]\nbg = "red; } body { display: none"', "not a valid CSS color"),
+        ('colors = "#fff"', "must be a table"),
+        ('extra_css = "a.css"', "must be a list"),
+    ]:
+        path.write_text(text + "\n")
+        with pytest.raises(MdTermError, match=message):
+            load_config(path)
+    path.write_text('theme = "ice"\n[colors]\nbg = "rgb(0 10 20 / 90%)"\n')
+    assert load_config(path).colors == {"bg": "rgb(0 10 20 / 90%)"}

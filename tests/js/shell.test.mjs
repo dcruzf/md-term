@@ -112,3 +112,14 @@ test("tab completion", () => {
   assert.equal(shell.complete("tag m").line, 'tag "my tag" ');
   assert.equal(shell.complete("cat zzz").line, "cat zzz");
 });
+
+test("theme lists, switches and completes", async () => {
+  const shell = createShell({ nodes, themes: ["phosphor", "amber", "paper"], theme: "phosphor" });
+  const items = (await shell.run("theme")).out[0].items;
+  assert.deepEqual(items.map((item) => [item.label, item.meta]), [["phosphor", "(current)"], ["amber", ""], ["paper", ""]]);
+  assert.equal((await shell.run("theme amber")).theme, "amber");
+  assert.equal(shell.theme, "amber");
+  assert.equal((await shell.run("theme neon")).out[0].text, "theme: neon: no such theme");
+  assert.equal(shell.complete("theme a").line, "theme amber ");
+  assert.deepEqual(shell.complete("theme p").candidates, ["paper ", "phosphor "]);
+});

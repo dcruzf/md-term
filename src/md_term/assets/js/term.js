@@ -182,6 +182,12 @@ async function execute(line, { push, target }) {
 
   promptLabel.textContent = ps1();
   root.dataset.cwd = shell.cwd;
+  if (result.theme) {
+    root.dataset.theme = result.theme;
+    try {
+      localStorage.setItem("md-term:theme", result.theme);
+    } catch {}
+  }
   if (result.clear) {
     scrollback.replaceChildren();
     scrollTo(0, 0);
@@ -323,6 +329,8 @@ async function start() {
     nodes: fs.nodes,
     tags: fs.tags,
     cwd: root.dataset.cwd,
+    themes: (root.dataset.themes ?? "").split(" ").filter(Boolean),
+    theme: root.dataset.theme,
     loadSearch: () => (search ??= fetch(siteUrl("search.json")).then((r) => r.json())),
   });
   shell.history = loadHistory();
