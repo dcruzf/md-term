@@ -1,6 +1,7 @@
 // The terminal UI. Every page is complete static HTML; this script turns it
 // into a live shell on top of fs.json, fetching other pages on demand.
 
+import { redrawDiagrams, renderDiagrams } from "./diagrams.js";
 import { loadPython, needsMoreInput } from "./python.js";
 import { createShell } from "./shell.js";
 import { display, formatPrompt, quote } from "./vfs.js";
@@ -125,6 +126,7 @@ async function openFile(path, entry, { push }) {
   decorate(content);
   content.removeAttribute("id");
   entry.append(document.adoptNode(content));
+  renderDiagrams(entry);
   document.title = page.title;
   if (push && url !== location.href.split("#")[0]) history.pushState({ path }, "", url);
 }
@@ -273,17 +275,36 @@ async function replSubmit(line) {
   form.scrollIntoView({ block: "nearest" });
 }
 
-// Adds a [run] link to Python code blocks.
+// Adds [copy] to code blocks and, when Python is enabled, [run] to Python ones.
 function decorate(scope) {
-  if (!pythonBase) return;
-  for (const code of scope.querySelectorAll("pre > code.language-python, pre > code.language-py")) {
-    if (code.parentElement.querySelector(".run")) continue;
-    const link = el("a", "run", "run");
-    link.href = "#run";
-    link.dataset.run = "";
-    link.title = "Run this block in your browser";
-    code.parentElement.append(link);
+  for (const code of scope.querySelectorAll(".prose pre > code")) {
+    const pre = code.parentElement;
+    if (pre.querySelector(".actions")) continue;
+    const actions = el("span", "actions");
+    const action = (name, title) => {
+      const link = el("a", name, name);
+      link.href = `#${name}`;
+      link.dataset.action = name;
+      link.title = title;
+      actions.append(link);
+    };
+    if (pythonBase && code.matches(".language-python, .language-py")) {
+      action("run", "Run this block in your browser");
+    }
+    action("copy", "Copy this block");
+    pre.append(actions);
   }
+}
+
+async function copyBlock(link) {
+  const code = link.closest("pre").querySelector("code").textContent;
+  try {
+    await navigator.clipboard.writeText(code);
+    link.textContent = "copied";
+  } catch {
+    link.textContent = "failed";
+  }
+  setTimeout(() => (link.textContent = "copy"), 1500);
 }
 
 function updatePrompt() {
@@ -327,6 +348,7 @@ async function execute(line, { push, target, code }) {
   root.dataset.cwd = shell.cwd;
   if (result.theme) {
     root.dataset.theme = result.theme;
+    redrawDiagrams();
     try {
       localStorage.setItem("md-term:theme", result.theme);
     } catch {}
@@ -452,7 +474,12 @@ document.addEventListener("click", (event) => {
   if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
   if (anchor.target === "_blank" || anchor.hasAttribute("download")) return;
 
-  if (anchor.dataset.run !== undefined) {
+  if (anchor.dataset.action === "copy") {
+    event.preventDefault();
+    copyBlock(anchor);
+    return;
+  }
+  if (anchor.dataset.action === "run") {
     event.preventDefault();
     if (form.classList.contains("busy")) return;
     const code = anchor.closest("pre").querySelector("code").textContent;
@@ -516,6 +543,7 @@ async function start() {
 
   absolutize(document.body, location.href);
   decorate(document);
+  renderDiagrams(document);
   const current = document.getElementById("content")?.dataset.path;
   history.replaceState({ path: current ?? null }, "");
 

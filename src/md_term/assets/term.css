@@ -531,49 +531,172 @@ mark {
   color: var(--fg);
 }
 
-/* [run] link on Python blocks, added by the shell when Python is enabled. */
+/* [run] and [copy] links on code blocks, added by the shell. */
 .prose pre {
   position: relative;
 }
 
-.prose pre .run {
+.prose pre .actions {
   position: absolute;
   top: 0.3em;
   right: 1ch;
+  display: flex;
+  gap: 1ch;
+  opacity: 0.55;
+}
+
+.prose pre:hover .actions,
+.prose pre .actions:focus-within {
+  opacity: 1;
+}
+
+.prose pre .actions a {
+  background: var(--bg-raised);
   text-decoration: none;
 }
 
-.prose pre .run::before {
+.prose pre .actions a:hover,
+.prose pre .actions a:focus-visible {
+  background: var(--fg-bright);
+}
+
+.prose pre .actions a::before {
   content: "[";
   color: var(--fg-dim);
 }
 
-.prose pre .run::after {
+.prose pre .actions a::after {
   content: "]";
   color: var(--fg-dim);
 }
 
-/* Pygments tokens, kept within the phosphor palette. */
-.prose pre [class^="c"] {
-  color: var(--fg-dim);
-  font-style: italic;
+/* ── Alerts (> [!NOTE]) and admonitions (!!! note) ─────────────────── */
+
+.prose .markdown-alert,
+.prose .admonition {
+  --accent: var(--fg-bright);
+  margin: 0 0 1em;
+  padding: 0.6em 2ch;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-raised);
 }
 
-.prose pre [class^="k"],
-.prose pre .ow,
-.prose pre .nt {
+.prose .markdown-alert-warning,
+.prose .markdown-alert-caution,
+.prose .admonition:is(.warning, .caution, .danger, .error, .attention) {
+  --accent: var(--alert);
+}
+
+.prose .markdown-alert > :last-child,
+.prose .admonition > :last-child {
+  margin-bottom: 0;
+}
+
+.prose .markdown-alert-title,
+.prose .admonition-title {
+  margin-bottom: 0.4em;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.prose .markdown-alert-title::before,
+.prose .admonition-title::before {
+  content: "[i] ";
+}
+
+.prose .markdown-alert-tip .markdown-alert-title::before,
+.prose .admonition:is(.tip, .hint, .success) .admonition-title::before {
+  content: "[*] ";
+}
+
+.prose :is(.markdown-alert-important, .markdown-alert-warning, .markdown-alert-caution) .markdown-alert-title::before,
+.prose .admonition:is(.important, .warning, .caution, .danger, .error, .attention) .admonition-title::before {
+  content: "[!] ";
+}
+
+/* ── Math (MathML generated at build time) ─────────────────────────── */
+
+.prose math {
+  color: var(--fg-bright);
+  font-size: 1.1em;
+  text-shadow: none;
+}
+
+.prose .math.block {
+  position: relative;
+  margin: 0 0 1em;
+  padding: 0.4em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.prose .math.block .mathlabel {
+  position: absolute;
+  right: 0;
+  text-decoration: none;
+}
+
+.prose .math-error {
+  color: var(--alert);
+}
+
+/* ── Diagrams and definition lists ─────────────────────────────────── */
+
+.prose figure.diagram {
+  margin: 0 0 1em;
+  padding: 0.8em 1ch;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  text-align: center;
+  text-shadow: none;
+}
+
+.prose figure.diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.prose pre.mermaid.failed {
+  border-color: var(--alert);
+}
+
+.prose dl {
+  margin: 0 0 1em;
+}
+
+.prose dt {
   color: var(--fg-bright);
   font-weight: 700;
 }
 
-.prose pre [class^="s"],
-.prose pre [class^="m"] {
+.prose dd {
+  margin: 0 0 0.5em 4ch;
+}
+
+/* Pygments tokens, kept within the phosphor palette. */
+.prose pre code [class^="c"] {
+  color: var(--fg-dim);
+  font-style: italic;
+}
+
+.prose pre code [class^="k"],
+.prose pre code .ow,
+.prose pre code .nt {
+  color: var(--fg-bright);
+  font-weight: 700;
+}
+
+.prose pre code [class^="s"],
+.prose pre code [class^="m"] {
   color: var(--alert);
 }
 
-.prose pre .nf,
-.prose pre .nc,
-.prose pre .nd {
+.prose pre code .nf,
+.prose pre code .nc,
+.prose pre code .nd {
   color: var(--fg-bright);
 }
 
