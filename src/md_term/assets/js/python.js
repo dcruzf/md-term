@@ -4,8 +4,11 @@
 //
 // A runtime is an object with:
 //   label                      text for the REPL banner
-//   run(code, { echo, onPrint }) → { value, error, restarted }
+//   run(code, { echo, onPrint, filename, files }) → { value, error, restarted, files }
 //       echo: treat a single line like the REPL does and return its repr
+//       files: the visitor's scratch files, {name: content}; a runtime with a
+//       filesystem exposes them to the code and returns them as they are after
+//       the run. A runtime without one ignores them and returns none.
 //   interrupt()                stop the running code; the session restarts
 //
 // A loader receives (base, manifest, { onProgress(loaded, total), onStatus(text) }).
@@ -156,7 +159,7 @@ async function loadPyodide(base, manifest, { onProgress, onStatus }) {
       return label;
     },
 
-    async run(code, { echo = false, onPrint = () => {} } = {}) {
+    async run(code, { echo = false, onPrint = () => {}, filename, files } = {}) {
       if (!worker) {
         onPrint("(restarting Python…)\n", "stderr");
         try {
@@ -168,9 +171,14 @@ async function loadPyodide(base, manifest, { onProgress, onStatus }) {
       try {
         const result = await new Promise((resolve) => {
           current = { onPrint, resolve };
-          worker.postMessage({ type: "run", code, echo });
+          worker.postMessage({ type: "run", code, echo, filename, files });
         });
-        return { value: result.value ?? null, error: result.error, restarted: result.restarted };
+        return {
+          value: result.value ?? null,
+          error: result.error,
+          restarted: result.restarted,
+          files: result.files,
+        };
       } finally {
         current = null;
       }

@@ -2,6 +2,7 @@
 // into a live shell on top of fs.json, fetching other pages on demand.
 
 import { redrawDiagrams, renderDiagrams } from "./diagrams.js";
+import { openEditor } from "./editor.js";
 import { loadPython, needsMoreInput } from "./python.js";
 import { createShell } from "./shell.js";
 import { display, formatPrompt, quote } from "./vfs.js";
@@ -208,7 +209,7 @@ async function getRuntime(entry) {
   }
 }
 
-async function runPython(code, entry, { echo = false } = {}) {
+async function runPython(code, entry, { echo = false, filename } = {}) {
   const runtime = await getRuntime(entry);
   if (!runtime) return;
   const out = el("pre", "plain");
@@ -217,11 +218,15 @@ async function runPython(code, entry, { echo = false } = {}) {
   try {
     const result = await runtime.run(code, {
       echo,
+      filename,
+      // Scripts see the scratch files on disk, and what they write comes back.
+      files: shell.scratch ? shell.exportFiles() : undefined,
       onPrint(text, stream) {
         out.append(stream === "stderr" ? el("span", "error", text) : text);
         form.scrollIntoView({ block: "nearest" });
       },
     });
+    if (result.files) shell.importFiles(result.files);
     if (result.value != null) out.append(result.value + "\n");
     if (result.error) entry.append(RENDER.error({ text: result.error }));
     if (result.restarted) {
@@ -275,7 +280,40 @@ async function replSubmit(line) {
   form.scrollIntoView({ block: "nearest" });
 }
 
-// Adds [copy] to code blocks and, when Python is enabled, [run] to Python ones.
+// ── Editor ───────────────────────────────────────────────────────────
+
+let editing = false;
+const SNIPPET = "snippet.py"; // where a code block opened with [edit] is saved
+
+// Opens `path` (a scratch file, possibly new) in the editor, inside `entry`.
+// `draft` is unsaved text to start from: a code block being tried out.
+async function editFile(path, entry, draft) {
+  const original = shell.readFile(path) ?? "";
+  const isPython = path.endsWith(".py");
+  editing = true;
+  root.classList.add("editing");
+  let result;
+  try {
+    result = await openEditor({
+      host: entry,
+      label: display(path),
+      content: draft ?? original,
+      original,
+      language: isPython ? "python" : "",
+      canRun: isPython && Boolean(pythonBase),
+      save: (text) => shell.writeFile(path, text),
+    });
+  } finally {
+    editing = false;
+    root.classList.remove("editing");
+  }
+  const summary = result.saved ? `wrote ${display(path)} (${result.lines} line(s))` : "nothing saved";
+  entry.append(el("pre", "plain dim", summary));
+  if (result.run) await runPython(result.text, entry, { filename: path.split("/").pop() });
+}
+
+// Adds [copy] to code blocks and, when Python is enabled, [run] and [edit] to
+// Python ones.
 function decorate(scope) {
   for (const code of scope.querySelectorAll(".prose pre > code")) {
     const pre = code.parentElement;
@@ -290,6 +328,7 @@ function decorate(scope) {
     };
     if (pythonBase && code.matches(".language-python, .language-py")) {
       action("run", "Run this block in your browser");
+      action("edit", "Open this block in the editor");
     }
     action("copy", "Copy this block");
     pre.append(actions);
@@ -324,14 +363,15 @@ async function whileBusy(task) {
     form.classList.remove("busy");
     updatePrompt();
     if (keepFocus) input.focus({ preventScroll: true });
+    form.scrollIntoView({ block: "nearest" });
   }
 }
 
-function run(line, { push = true, target = null, python: code = null } = {}) {
-  return whileBusy(() => execute(line, { push, target, code }));
+function run(line, { push = true, target = null, python: code = null, draft } = {}) {
+  return whileBusy(() => execute(line, { push, target, code, draft }));
 }
 
-async function execute(line, { push, target, code }) {
+async function execute(line, { push, target, code, draft }) {
   const entry = newEntry(line);
   let result;
   if (code !== null) {
@@ -347,6 +387,16 @@ async function execute(line, { push, target, code }) {
   }
 
   root.dataset.cwd = shell.cwd;
+  if (result.exit) {
+    // Start over: forget the session and load the home page afresh, which also
+    // ends any Python session. Scratch files and the chosen theme are kept.
+    try {
+      sessionStorage.removeItem("md-term:history");
+    } catch {}
+    if (location.href.split("#")[0] === BASE.href) location.reload();
+    else location.assign(BASE.href);
+    return;
+  }
   if (result.theme) {
     root.dataset.theme = result.theme;
     redrawDiagrams();
@@ -366,8 +416,9 @@ async function execute(line, { push, target, code }) {
   for (const node of lines) node.classList.add("printing"); // hidden but laid out, so the scroll is final
   reveal(entry, target && entry.querySelector(`[id="${CSS.escape(target)}"]`));
   await print(lines);
-  if (result.python?.repl) await startRepl(entry);
-  else if (result.python) await runPython(result.python.code, entry);
+  if (result.edit) await editFile(result.edit, entry, draft);
+  else if (result.python?.repl) await startRepl(entry);
+  else if (result.python) await runPython(result.python.code, entry, result.python);
 }
 
 async function openPath(path) {
@@ -500,7 +551,7 @@ window.visualViewport?.addEventListener("resize", () => {
 
 // Typing anywhere lands in the prompt, and typing brings the prompt back into view.
 document.addEventListener("keydown", (event) => {
-  if (event.target === input || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (editing || event.target === input || event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key.length === 1 && event.key !== " ") input.focus({ preventScroll: true });
 });
 
@@ -508,7 +559,7 @@ input.addEventListener("input", () => form.scrollIntoView({ block: "nearest" }))
 
 // Clicking the empty screen focuses the prompt, unless the click selected text.
 document.querySelector(".screen").addEventListener("click", (event) => {
-  if (event.target.closest("a, input, button, summary")) return;
+  if (editing || event.target.closest("a, input, button, summary")) return;
   if (!finePointer.matches) return; // a tap would summon the keyboard
   if (getSelection().isCollapsed) input.focus({ preventScroll: true });
 });
@@ -529,6 +580,13 @@ document.addEventListener("click", (event) => {
   if (anchor.dataset.action === "copy") {
     event.preventDefault();
     copyBlock(anchor);
+    return;
+  }
+  if (anchor.dataset.action === "edit") {
+    event.preventDefault();
+    if (form.classList.contains("busy")) return;
+    const code = anchor.closest("pre").querySelector("code").textContent;
+    run(`edit ${quote(display(shell.scratch + "/" + SNIPPET))}`, { draft: code });
     return;
   }
   if (anchor.dataset.action === "run") {
@@ -588,6 +646,22 @@ async function start() {
     themes: (root.dataset.themes ?? "").split(" ").filter(Boolean),
     theme: root.dataset.theme,
     python: Boolean(pythonBase),
+    // Scratch files and the editor come with Python: scripts are their purpose.
+    scratch: Boolean(pythonBase),
+    storage: {
+      read() {
+        try {
+          return JSON.parse(localStorage.getItem("md-term:files")) ?? {};
+        } catch {
+          return {};
+        }
+      },
+      write(files) {
+        try {
+          localStorage.setItem("md-term:files", JSON.stringify(files));
+        } catch {}
+      },
+    },
     loadSearch: () => (search ??= fetch(siteUrl("search.json")).then((r) => r.json())),
   });
   shell.history = loadHistory();

@@ -23,6 +23,9 @@ from .python_runtime import install as install_python
 
 log = logging.getLogger("md_term")
 
+ICONIFY = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*")
+ICON_TYPES = {".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon"}
+
 MARKER = ".md-term-build"
 FEED_ITEMS = 20
 
@@ -95,10 +98,13 @@ def _write_site(config: Config, site: Site, out: Path, *, livereload: bool) -> N
     if site.posts and not config.site_url:
         log.warning("site_url is not set: skipping feed.xml")
 
+    icon = _icon(config, site)
+
     def write_html(url: str, template: str, **context: object) -> None:
         base = relurl("", url)
         text = env.get_template(template).render(
             config=config,
+            icon=icon | {"href": relurl(icon["href"], url) if icon["local"] else icon["href"]},
             themes=THEMES,
             colors={key.replace("_", "-"): value for key, value in config.colors.items()},
             base=base,
@@ -245,6 +251,69 @@ def _link_resolver(page: Page, site: Site):
         return urlunsplit(("", "", quote(relurl(url, page.url)), parts.query, parts.fragment))
 
     return resolve
+
+
+def _theme_colors(config: Config) -> dict[str, str]:
+    """The palette of the configured theme, read from the packaged style sheet."""
+    css = (resources.files("md_term") / "assets" / "term.css").read_text(encoding="utf-8")
+    blocks = [re.search(r":root \{(.*?)\}", css, re.DOTALL)]
+    blocks.append(re.search(rf':root\[data-theme="{config.theme}"\] \{{(.*?)\}}', css, re.DOTALL))
+    colors: dict[str, str] = {}
+    for block in filter(None, blocks):
+        colors |= dict(re.findall(r"--([\w-]+):\s*([^;]+);", block.group(1)))
+    return colors | {key.replace("_", "-"): value for key, value in config.colors.items()}
+
+
+def _text_icon(text: str, background: str, color: str) -> str:
+    """A favicon drawn from a few characters, as an SVG data URL."""
+    if text.isascii():  # a tile in the theme's colors
+        size = {1: 46, 2: 34}.get(len(text), 24)
+        tile = f'<rect width="64" height="64" rx="10" fill="{html.escape(background)}"/>'
+    else:  # an emoji fills the icon by itself
+        size, tile = 54, ""
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+        f"{tile}"
+        '<text x="32" y="34" text-anchor="middle" dominant-baseline="central" '
+        'font-family="ui-monospace,Menlo,Consolas,monospace" font-weight="700" '
+        f'font-size="{size}" fill="{html.escape(color)}">{html.escape(text)}</text></svg>'
+    )
+    return "data:image/svg+xml," + quote(svg, safe="")
+
+
+def _icon(config: Config, site: Site) -> dict:
+    """Resolves `icon` to what the pages link to: {href, type, local}.
+
+    `local` marks a file of the site, whose href is relative to the site root.
+    """
+    colors = _theme_colors(config)
+    background, color = colors.get("bg", "#000"), colors.get("fg-bright", "#fff")
+    value = config.icon.strip()
+    if value.startswith("[[") and value.endswith("]]"):  # an Obsidian link to the file
+        value = value[2:-2].split("|")[0].strip()
+
+    if re.match(r"https?://", value):
+        suffix = posixpath.splitext(urlsplit(value).path)[1].lower()
+        return {"href": value, "type": ICON_TYPES.get(suffix, ""), "local": False}
+    if ICONIFY.fullmatch(value):
+        collection, name = value.split(":")
+        tint = (
+            f"?color={quote(color, safe='')}" if re.fullmatch(r"#[0-9a-fA-F]{3,8}", color) else ""
+        )
+        href = f"https://api.iconify.design/{collection}/{name}.svg{tint}"
+        return {"href": href, "type": "image/svg+xml", "local": False}
+    if "/" in value or "." in value:  # a file among the docs, by path or by name alone
+        matches = sorted(
+            (src for src in site.static if src == value or src.endswith("/" + value)),
+            key=lambda src: (src.count("/"), src),
+        )
+        if matches:
+            suffix = posixpath.splitext(matches[0])[1].lower()
+            return {"href": matches[0], "type": ICON_TYPES.get(suffix, ""), "local": True}
+        log.warning("icon: '%s' not found in %s, using the default icon", value, config.docs_dir)
+        value = ""
+    href = _text_icon(value or ">_", background, color)
+    return {"href": href, "type": "image/svg+xml", "local": False}
 
 
 def _wikilink_resolver(page: Page, site: Site):

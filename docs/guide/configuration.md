@@ -41,6 +41,7 @@ alert = "#ff3b3b"
 | `host`            | from the site name       | machine shown in the prompt                     |
 | `ps1`             | `{user}@{host}:{path}$`  | [prompt format](#prompt)                        |
 | `motd`            | empty                    | message printed on the home page                |
+| `icon`            | a `>_` tile              | the [favicon](#icon)                            |
 | `theme`           | `phosphor`               | [color theme](themes.md): `phosphor`, `amber`, `ice`, `mono`, `dracula` or `paper` |
 | `[colors]`        | empty                    | colors that replace the theme's                 |
 | `extra_css`       | empty                    | style sheets from `docs/`, loaded after the default one |
@@ -77,19 +78,49 @@ site_theme: amber
 | `site_ps1`         | `ps1`         |
 | `site_motd`        | `motd`        |
 | `site_theme`       | `theme`       |
+| `site_icon`        | `icon`        |
 
 A property that is present wins over `md-term.toml`; one that is missing or
 empty leaves the file's value alone. The values are checked like the file's:
 an unknown theme, for example, stops the build with a message naming
 `index.md`.
 
-Only these eight can be set this way, and only on the root `index.md`; the
+Only these nine can be set this way, and only on the root `index.md`; the
 same properties on any other page are ignored. Paths, `site_url`, colors,
 extra CSS and Python stay in `md-term.toml`.
 
 > [!NOTE]
 > `title` and `description` keep their usual meaning: they describe the home
 > *page*. The site's name and tagline are `site_name` and `site_description`.
+
+## Icon
+
+The `icon` option sets the favicon, the small image in the browser tab. It
+accepts these kinds of value:
+
+| Value                         | Example                          | Result                                  |
+| ----------------------------- | -------------------------------- | --------------------------------------- |
+| nothing                       |                                  | a `>_` tile in the theme's colors       |
+| an emoji                      | `"🦊"`                           | the emoji                               |
+| one to three characters       | `"dc"`                           | a tile with that text, in the theme's colors |
+| a file in the docs folder     | `"assets/logo.png"`              | that image (`.svg`, `.png` or `.ico`)   |
+| an icon from a public set     | `"mdi:console"`                  | the icon, tinted with the theme's bright color |
+| a web address                 | `"https://example.com/logo.svg"` | whatever is published there             |
+
+```toml
+icon = "mdi:console"
+```
+
+- **Files** can be named by path from the docs root or by file name alone;
+  when two files share a name, the one closest to the root is used. A file
+  that is not found makes the build warn and fall back to the default tile.
+- **Icon sets** use the `set:name` form of [Iconify](https://icon-sets.iconify.design/),
+  which gathers more than a hundred open icon sets: `mdi:console`,
+  `lucide:terminal`, `tabler:brand-python`. Browse the catalogue there and
+  copy the name. The image is fetched by the visitor's browser from
+  `api.iconify.design`; a wrong name simply shows no icon.
+- **Tiles and tints** use the colors of the theme set in the configuration.
+  They do not follow a visitor who switches themes with the `theme` command.
 
 ## Prompt
 

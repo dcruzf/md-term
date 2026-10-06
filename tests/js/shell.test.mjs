@@ -152,3 +152,74 @@ test("complete reports the untouched head of the line, for clickable candidates"
   assert.equal(head, "cat ");
   assert.deepEqual(candidates.map((candidate) => head + candidate), ["cat blog/first.md ", "cat blog/second.md "]);
 });
+
+// ── Scratch files ────────────────────────────────────────────────────
+
+function withScratch(initial = {}) {
+  let stored = { ...initial };
+  const storage = { read: () => stored, write: (files) => (stored = { ...files }) };
+  const shell = createShell({ nodes, python: true, scratch: true, storage, loadSearch: async () => docs });
+  return { shell, stored: () => stored };
+}
+const message = (result) => result.out[0]?.text;
+
+test("the scratch folder is mounted next to the pages and lists stored files", async () => {
+  const { shell } = withScratch({ "a.py": "print(1)\n" });
+  assert.deepEqual(labels(await shell.run("ls")), ["blog/", "guide/", "scratch/", "index.md"]);
+  const items = (await shell.run("ls scratch")).out[0].items;
+  assert.deepEqual(items.map((item) => [item.label, item.meta]), [["a.py", "9 B"]]);
+  assert.equal(nodes["/"].children.includes("scratch"), false); // the site's tree is not modified
+});
+
+test("touch, cat, cp, mv and rm work on scratch files and persist", async () => {
+  const { shell, stored } = withScratch();
+  await shell.run("touch notes.txt"); // a bare name lands in the scratch folder
+  assert.deepEqual(stored(), { "notes.txt": "" });
+  assert.equal(shell.writeFile("/scratch/notes.txt", "line one\n"), null);
+  assert.equal(message(await shell.run("cat notes.txt")), "line one");
+  await shell.run("cp notes.txt copy.txt");
+  await shell.run("mv copy.txt renamed.txt");
+  assert.deepEqual(Object.keys(stored()).sort(), ["notes.txt", "renamed.txt"]);
+  await shell.run("cp ~/index.md page.md"); // a page's markdown can be copied in
+  assert.equal(stored()["page.md"], "# Home\nWelcome to the Site");
+  await shell.run("rm notes.txt renamed.txt page.md");
+  assert.deepEqual(stored(), {});
+  assert.match(message(await shell.run("rm nope.txt")), /No such file/);
+});
+
+test("everything outside the scratch folder is read-only", async () => {
+  const { shell, stored } = withScratch();
+  assert.match(message(await shell.run("touch ~/blog/x.txt")), /Read-only file system \(files live in ~\/scratch\)/);
+  assert.match(message(await shell.run("rm ~/index.md")), /Read-only file system/);
+  assert.match(message(await shell.run("edit ~/index.md")), /Read-only file \(copy it first: cp ~\/index.md ~\/scratch\/\)/);
+  assert.match(message(await shell.run("touch scratch/sub/x.txt")), /Read-only file system/); // no subfolders
+  assert.deepEqual(stored(), {});
+});
+
+test("edit and python resolve scripts", async () => {
+  const { shell } = withScratch({ "run.py": "print('x')\n" });
+  assert.equal((await shell.run("edit new.py")).edit, "/scratch/new.py");
+  assert.equal((await shell.run("nano run.py")).edit, "/scratch/run.py");
+  assert.equal((await shell.run("vim ~/scratch/run.py")).edit, "/scratch/run.py");
+  assert.match(message(await shell.run("edit scratch")), /Is a directory/);
+  assert.deepEqual((await shell.run("python run.py")).python, { code: "print('x')\n", filename: "run.py" });
+  assert.match(message(await shell.run("python ~/index.md")), /not a script/);
+  assert.match(message(await shell.run("python missing.py")), /No such file/);
+});
+
+test("files written by Python replace the scratch folder, within the limits", async () => {
+  const { shell, stored } = withScratch({ "old.txt": "x" });
+  shell.importFiles({ "out.txt": "made by python", "sub/skip.txt": "no", "huge.bin": "x".repeat(300 * 1024) });
+  assert.deepEqual(stored(), { "out.txt": "made by python" });
+  assert.deepEqual(shell.exportFiles(), { "out.txt": "made by python" });
+  assert.equal(shell.writeFile("/scratch/big.txt", "x".repeat(300 * 1024)), "File too large");
+});
+
+test("exit asks for a restart, and scratch commands need the feature", async () => {
+  assert.equal((await make().run("exit")).exit, true);
+  assert.equal((await make().run("logout")).exit, true);
+  assert.equal(message(await make().run("edit x.py")), "edit: not enabled on this site");
+  assert.equal(message(await make().run("vim x.py")), "vim: not enabled on this site");
+  const usages = (await make().run("help")).out[0].rows.map((row) => row.usage);
+  assert.ok(usages.includes("exit") && !usages.some((usage) => usage.startsWith("edit")));
+});

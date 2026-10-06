@@ -4,6 +4,7 @@ import json
 import tarfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from urllib.parse import unquote
 
 import pytest
 
@@ -417,3 +418,62 @@ def test_home_page_properties_are_validated(project: Config):
         (project.docs_path / "index.md").write_text(f"---\n{front_matter}\n---\nBody\n")
         with pytest.raises(MdTermError, match=message):
             build(project)
+
+
+def icon_tag(config: Config, page: str = "index.html") -> str:
+    return next(line for line in read(config, page).splitlines() if 'rel="icon"' in line)
+
+
+def test_default_icon_is_a_prompt_in_the_theme_colors(project: Config):
+    project.theme = "amber"
+    build(project)
+    tag = unquote(icon_tag(project))
+    assert 'type="image/svg+xml"' in tag and "data:image/svg+xml," in tag
+    assert "&gt;_</text>" in tag and 'fill="#0c0700"' in tag and 'fill="#ffb000"' in tag
+
+
+def test_icon_from_text_emoji_url_and_icon_set(project: Config):
+    project.icon = "dc"
+    project.colors = {"fg_bright": "#123456"}
+    build(project)
+    assert ">dc</text>" in unquote(icon_tag(project)) and 'fill="#123456"' in unquote(
+        icon_tag(project)
+    )
+
+    project.icon = "🦊"
+    build(project)
+    tag = unquote(icon_tag(project))
+    assert "🦊</text>" in tag and "<rect" not in tag
+
+    project.icon = "https://example.com/logo.png"
+    build(project)
+    assert (
+        icon_tag(project)
+        == '<link rel="icon" href="https://example.com/logo.png" type="image/png">'
+    )
+
+    project.icon = "mdi:console"
+    build(project)
+    assert 'href="https://api.iconify.design/mdi/console.svg?color=%23123456"' in icon_tag(project)
+
+
+def test_icon_from_a_file_is_linked_relative_to_each_page(project: Config, caplog):
+    project.icon = "pic.png"  # found by name alone, as Obsidian would
+    build(project)
+    assert icon_tag(project) == '<link rel="icon" href="blog/pic.png" type="image/png">'
+    assert 'href="../pic.png"' in icon_tag(project, "blog/first/index.html")
+
+    project.icon = "[[blog/pic.png]]"
+    build(project)
+    assert 'href="blog/pic.png"' in icon_tag(project)
+
+    project.icon = "missing.png"
+    build(project)
+    assert "data:image/svg+xml," in icon_tag(project)
+    assert "icon: 'missing.png' not found" in caplog.text
+
+
+def test_home_page_can_set_the_icon(project: Config):
+    (project.docs_path / "index.md").write_text("---\nsite_icon: 🌱\n---\nBody\n")
+    build(project)
+    assert "🌱" in unquote(icon_tag(project, "guide/setup/index.html"))

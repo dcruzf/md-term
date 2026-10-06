@@ -1,0 +1,19 @@
+{
+  "name": "md-term-editor-bundle",
+  "private": true,
+  "type": "module",
+  "description": "Bundles CodeMirror into the single file md-term's `edit` command loads on demand.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@codemirror/commands": "6.8.1",
+    "@codemirror/lang-python": "6.2.1",
+    "@codemirror/language": "6.11.3",
+    "@codemirror/state": "6.5.2",
+    "@codemirror/view": "6.38.4",
+    "@lezer/highlight": "1.2.1",
+    "codemirror": "6.0.2",
+    "esbuild": "0.25.10"
+  }
+}
