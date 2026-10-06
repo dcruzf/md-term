@@ -40,15 +40,43 @@ Com isso o site ganha:
 - `python -c "código"`, para rodar uma linha
 - um link `[run]` em cada bloco de código Python dos artigos
 
-Este site usa o `monty`. Experimente:
+Este site usa o `pyodide`. Experimente clicar em `[run]`:
 
 ```python
-def saudacao(nome: str) -> str:
-    return f"olá, {nome}"
+from statistics import mean
 
 
-for nome in ["mundo", "md-term"]:
-    print(saudacao(nome))
+class Forma:
+    def area(self) -> float:
+        raise NotImplementedError
+
+
+class Retangulo(Forma):
+    def __init__(self, largura: float, altura: float):
+        self.largura, self.altura = largura, altura
+
+    def area(self) -> float:
+        return self.largura * self.altura
+
+
+def quadrados(limite: int):
+    for lado in range(1, limite + 1):
+        yield Retangulo(lado, lado)
+
+
+areas = [forma.area() for forma in quadrados(4)]
+print(areas, "média:", mean(areas))
+```
+
+Herança, geradores e o módulo `statistics` são coisas que só o `pyodide`
+roda. Um exemplo com pacote, que baixa o `numpy` na primeira execução:
+
+```python
+import numpy as np
+
+matriz = np.arange(12).reshape(3, 4)
+print(matriz)
+print("soma por coluna:", matriz.sum(axis=0))
 ```
 
 ## O REPL
