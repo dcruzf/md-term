@@ -50,6 +50,47 @@ alert = "#ff3b3b"
 An unknown option, or one with the wrong type, stops the build with a
 message naming it.
 
+## Settings in the home page
+
+The wording and look of the site can also be set from the front matter of
+the home page, the `index.md` at the root of the docs folder. This is handy
+when the notes are written somewhere the configuration file is not, such as
+an [Obsidian vault](obsidian.md): the properties of one note control the
+site.
+
+```yaml
+---
+title: Home
+site_name: Field Notes
+site_description: thinking out loud
+site_theme: amber
+---
+```
+
+| Property           | Replaces      |
+| ------------------ | ------------- |
+| `site_name`        | `site_name`   |
+| `site_description` | `description` |
+| `site_lang`        | `lang`        |
+| `site_user`        | `user`        |
+| `site_host`        | `host`        |
+| `site_ps1`         | `ps1`         |
+| `site_motd`        | `motd`        |
+| `site_theme`       | `theme`       |
+
+A property that is present wins over `md-term.toml`; one that is missing or
+empty leaves the file's value alone. The values are checked like the file's:
+an unknown theme, for example, stops the build with a message naming
+`index.md`.
+
+Only these eight can be set this way, and only on the root `index.md`; the
+same properties on any other page are ignored. Paths, `site_url`, colors,
+extra CSS and Python stay in `md-term.toml`.
+
+> [!NOTE]
+> `title` and `description` keep their usual meaning: they describe the home
+> *page*. The site's name and tagline are `site_name` and `site_description`.
+
 ## Prompt
 
 The `ps1` option sets the prompt format. It takes free text and four

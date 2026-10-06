@@ -37,6 +37,9 @@ def relurl(target: str, from_dir: str) -> str:
 
 def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> Site:
     site = load_site(config, drafts=drafts)
+    home = site.by_src.get("index.md")
+    if home:
+        config = config.with_page_settings(home.meta, home.src)
     final = config.site_path
     _check_output(config)
     # Build next to the target and swap at the end: visitors never see a

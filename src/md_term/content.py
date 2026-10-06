@@ -32,6 +32,7 @@ class Page:
     tags: list[str] = field(default_factory=list)
     description: str = ""
     draft: bool = False
+    meta: dict = field(default_factory=dict)  # the raw front matter
     html: str = ""
     excerpt: str = ""
 
@@ -158,6 +159,7 @@ def parse_page(src: str, text: str) -> Page:
         description=str(meta.get("description") or ""),
         # `publish: false` is how Obsidian marks a note as private.
         draft=bool(meta.get("draft", False)) or meta.get("publish") is False,
+        meta=meta,
     )
 
 

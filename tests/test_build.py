@@ -374,3 +374,46 @@ def test_failed_build_keeps_the_previous_site(project: Config):
     assert "Changed" in read(project, "index.html")
     assert not list(project.root.glob(".site-build-*"))
     assert oct(project.site_path.stat().st_mode & 0o777) == "0o755"
+
+
+def test_home_page_properties_override_site_settings(project: Config):
+    (project.docs_path / "index.md").write_text(
+        "---\ntitle: Start\nsite_name: Field Notes\nsite_description: thinking out loud\n"
+        'site_theme: amber\nsite_user: reader\nsite_ps1: "{user}@{host} {dir} >"\n'
+        "site_motd: hello there\nsite_lang: pt-BR\n---\nBody.\n"
+    )
+    build(project)
+    home = read(project, "index.html")
+    assert "<title>Start — Field Notes</title>" in home
+    assert '<a class="brand" href="./">Field Notes</a>' in home
+    assert '<span class="tagline">thinking out loud</span>' in home
+    assert 'data-theme="amber"' in home and 'lang="pt-BR"' in home
+    assert '<pre class="motd">hello there</pre>' in home
+    # the host was derived from the old name, so it follows the new one
+    assert '<span class="ps1">reader@field-notes ~ &gt;</span>' in home
+    post = read(project, "blog/first/index.html")
+    assert "First post — Field Notes" in post and "reader@field-notes blog &gt;" in post
+    assert project.site_name == "Test"  # the config object itself is not modified
+
+
+def test_home_page_properties_keep_an_explicit_host_and_ignore_other_pages(project: Config):
+    project.host = "box"
+    (project.docs_path / "index.md").write_text(
+        "---\nsite_name: New Name\nsite_theme:\n---\nBody\n"
+    )
+    (project.docs_path / "guide" / "setup.md").write_text("---\nsite_name: Hijack\n---\n# Setup\n")
+    build(project)
+    home = read(project, "index.html")
+    assert "New Name" in home and "Hijack" not in home
+    assert "guest@box:~$" in home and 'data-theme="phosphor"' in home
+
+
+def test_home_page_properties_are_validated(project: Config):
+    for front_matter, message in [
+        ("site_theme: neon", "index.md: unknown theme 'neon'"),
+        ("site_ps1: '{nope} $'", "index.md: unknown placeholder"),
+        ("site_name: [a, b]", "index.md: 'site_name' must be text"),
+    ]:
+        (project.docs_path / "index.md").write_text(f"---\n{front_matter}\n---\nBody\n")
+        with pytest.raises(MdTermError, match=message):
+            build(project)

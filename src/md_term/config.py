@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import tomllib
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
 CONFIG_NAME = "md-term.toml"
@@ -14,6 +14,18 @@ COLOR_KEYS = ("bg", "bg_raised", "fg", "fg_bright", "fg_dim", "line", "alert", "
 # Placeholders accepted in `ps1`. The browser shell fills the same ones (vfs.js).
 PS1_FIELDS = ("user", "host", "path", "dir")
 PS1_FIELD = re.compile(r"\{(\w*)\}")
+# What the home page (the root index.md) may set in its front matter, as
+# `site_<name>`: the look and wording of the site, never paths or downloads.
+PAGE_SETTINGS = {
+    "site_name": "site_name",
+    "site_description": "description",
+    "site_lang": "lang",
+    "site_user": "user",
+    "site_host": "host",
+    "site_ps1": "ps1",
+    "site_motd": "motd",
+    "site_theme": "theme",
+}
 PYTHON_RUNTIMES = ("monty", "pyodide")
 # A package name with an optional version specifier, as micropip accepts.
 _REQUIREMENT = re.compile(r"[A-Za-z0-9][\w.\-\[\],]*([=<>!~]=?[\w.*,=<>!~]+)?")
@@ -72,9 +84,30 @@ class Config:
                     f"unknown placeholder '{{{name}}}' in ps1 (choose from: {fields_})"
                 )
         if not self.host:
-            self.host = re.sub(r"[^\w.-]+", "-", self.site_name.lower()).strip("-") or "md-term"
+            self.host = _host_from(self.site_name)
         if self.site_url and not self.site_url.endswith("/"):
             self.site_url += "/"
+
+    def with_page_settings(self, meta: dict, src: str) -> Config:
+        """Applies the `site_*` properties of the home page on top of this config."""
+        changes = {}
+        for key, option in PAGE_SETTINGS.items():
+            value = meta.get(key)
+            if value is None or value == "":
+                continue
+            if not isinstance(value, str):
+                raise MdTermError(f"{src}: '{key}' must be text")
+            changes[option] = value
+        if not changes:
+            return self
+        # A host that was derived from the old name follows the new name.
+        derived = self.host == _host_from(self.site_name)
+        if "site_name" in changes and "host" not in changes and derived:
+            changes["host"] = ""
+        try:
+            return replace(self, **changes)
+        except MdTermError as exc:
+            raise MdTermError(f"{src}: {exc}") from exc
 
     def prompt(self, vdir: str) -> str:
         """The prompt shown in the virtual directory `vdir` ('/' is the home)."""
@@ -94,6 +127,10 @@ class Config:
     @property
     def site_path(self) -> Path:
         return (self.root / self.site_dir).resolve()
+
+
+def _host_from(site_name: str) -> str:
+    return re.sub(r"[^\w.-]+", "-", site_name.lower()).strip("-") or "md-term"
 
 
 def load_config(path: Path) -> Config:
