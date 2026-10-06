@@ -260,13 +260,26 @@ a:focus-visible {
 
 /* The prompt follows the output, as in a real terminal. */
 #prompt {
-  flex-wrap: nowrap;
   scroll-margin-bottom: 1.5rem;
 }
 
+#prompt .cmdline {
+  flex-wrap: nowrap;
+}
+
 /* Hidden while a command prints. Not `visibility: hidden`: that would blur the input. */
-#prompt.busy {
+#prompt.busy .cmdline {
   opacity: 0;
+}
+
+/* On-screen keys and the jump-to-prompt button: touch screens only (see below). */
+.keys,
+#to-prompt {
+  display: none;
+}
+
+.candidates a {
+  text-decoration: none;
 }
 
 .printing {
@@ -729,7 +742,16 @@ mark {
   }
 
   .term {
-    padding: 0 12px;
+    padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+  }
+
+  /* A long prompt takes the line; the command wraps below it. */
+  #prompt .cmdline {
+    flex-wrap: wrap;
+  }
+
+  #input {
+    min-width: 12ch;
   }
 
   .help {
@@ -741,11 +763,112 @@ mark {
   }
 }
 
+/* ── Touch screens ─────────────────────────────────────────────────── */
+
+@media (pointer: coarse) {
+  html {
+    scroll-padding-top: 3.2rem;
+  }
+
+  /* The commands stay reachable while reading: one scrollable row at the top. */
+  .cmdbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    flex-wrap: nowrap;
+    gap: 0 0.5ch;
+    padding: 4px 0;
+    overflow-x: auto;
+    background: var(--bg);
+    scrollbar-width: none;
+  }
+
+  .cmdbar a {
+    padding: 0.55em 0.5ch;
+    white-space: nowrap;
+  }
+
+  .cmdbar .feed {
+    margin-left: 0;
+  }
+
+  /* Comfortable tap targets for everything a command lists. */
+  .ls li,
+  .matches li,
+  .tree a,
+  .candidates a {
+    line-height: 2.2;
+  }
+
+  .filemeta .tag,
+  .prose pre .actions a {
+    padding: 0.35em 0.5ch;
+  }
+
+  .prose pre .actions {
+    top: 0;
+    right: 0.5ch;
+    opacity: 1;
+  }
+
+  /* 16px keeps iOS from zooming the page when the input gets the focus. */
+  #prompt .cmdline {
+    font-size: 16px;
+    min-height: 2.6em;
+    align-items: center;
+  }
+
+  .keys {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .keys button {
+    min-width: 3.2em;
+    padding: 0.55em 0.9ch;
+    border: 1px solid var(--line);
+    border-radius: 0;
+    background: var(--bg-raised);
+    color: var(--fg-bright);
+    font: inherit;
+    touch-action: manipulation;
+  }
+
+  .keys button:active {
+    background: var(--fg-bright);
+    color: var(--bg);
+  }
+
+  .keys .repl-only {
+    display: none;
+  }
+
+  #prompt.repl .keys .repl-only {
+    display: inline-block;
+  }
+
+  .js #to-prompt:not([hidden]) {
+    position: fixed;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 6;
+    display: block;
+    padding: 0.6em 1.2ch;
+    border: 1px solid var(--fg-dim);
+    background: var(--bg-raised);
+    font-weight: 700;
+    text-decoration: none;
+  }
+}
+
 @media print {
   body::after,
   .cmdbar,
-  #prompt {
-    display: none;
+  #prompt,
+  #to-prompt {
+    display: none !important;
   }
 
   .screen {

@@ -321,8 +321,8 @@ export function createShell({
       const tokens = tokenize(line);
       const fresh = line === "" || /\s$/.test(line);
       const word = fresh ? "" : tokens[tokens.length - 1];
-      if (!line.endsWith(word)) return { line, candidates: [] }; // quoted word: leave it alone
       const head = line.slice(0, line.length - word.length);
+      if (!line.endsWith(word)) return { line, head, candidates: [] }; // quoted word: leave it alone
 
       let candidates;
       if (tokens.length === 0 || (tokens.length === 1 && !fresh)) {
@@ -353,10 +353,10 @@ export function createShell({
       }
 
       candidates.sort();
-      if (candidates.length === 0) return { line, candidates: [] };
-      if (candidates.length === 1) return { line: head + candidates[0], candidates: [] };
+      if (candidates.length === 0) return { line, head, candidates: [] };
+      if (candidates.length === 1) return { line: head + candidates[0], head, candidates: [] };
       const prefix = commonPrefix(candidates);
-      return { line: prefix.length > word.length ? head + prefix : line, candidates };
+      return { line: prefix.length > word.length ? head + prefix : line, head, candidates };
     },
   };
   return shell;

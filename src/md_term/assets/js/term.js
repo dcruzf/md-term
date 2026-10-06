@@ -309,6 +309,7 @@ async function copyBlock(link) {
 
 function updatePrompt() {
   promptLabel.textContent = repl ? replPrompt() : ps1();
+  form.classList.toggle("repl", Boolean(repl));
 }
 
 // Hides the prompt while `task` prints, then hands the focus back to it.
@@ -392,9 +393,17 @@ function loadHistory() {
   }
 }
 
-function showCandidates(candidates) {
+// Lists the possible completions; picking one fills the prompt.
+function showCandidates(head, candidates) {
   const entry = newEntry(input.value);
-  entry.append(el("pre", "plain dim", candidates.map((c) => c.trim()).join("  ")));
+  const list = el("pre", "plain candidates");
+  for (const candidate of candidates) {
+    const link = el("a", "", candidate.trim());
+    link.href = "#complete";
+    link.dataset.complete = head + candidate;
+    list.append(link, "  ");
+  }
+  entry.append(list);
   form.scrollIntoView({ block: "nearest" });
 }
 
@@ -408,49 +417,85 @@ form.addEventListener("submit", (event) => {
   else run(line);
 });
 
-input.addEventListener("keydown", (event) => {
+// The terminal's keys. Called for real key presses and for the on-screen keys
+// shown on touch screens. Returns true when the key was handled.
+function handleKey(key, ctrl) {
   const lines = repl ? repl.history : shell.history;
-  if (event.key === "Tab") {
-    event.preventDefault();
+  if (ctrl && key === "c" && running) {
+    running.interrupt();
+  } else if (key === "Tab") {
     if (repl) {
       input.setRangeText("    ", input.selectionStart, input.selectionEnd, "end"); // indent
-      return;
+      return true;
     }
-    const { line, candidates } = shell.complete(input.value);
+    const { line, head, candidates } = shell.complete(input.value);
     input.value = line;
-    if (candidates.length) showCandidates(candidates);
-  } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-    event.preventDefault();
+    if (candidates.length) showCandidates(head, candidates);
+  } else if (key === "ArrowUp" || key === "ArrowDown") {
     if (historyIndex === lines.length) draft = input.value;
-    const step = event.key === "ArrowUp" ? -1 : 1;
+    const step = key === "ArrowUp" ? -1 : 1;
     historyIndex = Math.max(0, Math.min(lines.length, historyIndex + step));
     input.value = lines[historyIndex] ?? draft;
-  } else if (event.ctrlKey && event.key === "l") {
-    event.preventDefault();
+  } else if (ctrl && key === "l") {
     if (repl) {
       scrollback.replaceChildren();
       scrollTo(0, 0);
     } else run("clear");
-  } else if (event.ctrlKey && event.key === "d" && repl && input.value === "") {
-    event.preventDefault();
+  } else if (ctrl && key === "d" && repl && input.value === "") {
     newEntry("^D", replPrompt(), "entry repl");
     leaveRepl();
     updatePrompt();
-  } else if (event.ctrlKey && event.key === "c" && !running) {
-    if (input.selectionStart !== input.selectionEnd) return; // let the browser copy
-    event.preventDefault();
+  } else if (ctrl && key === "c") {
+    if (input.selectionStart !== input.selectionEnd) return false; // let the browser copy
     newEntry(input.value + "^C", repl ? replPrompt() : ps1(), repl ? "entry repl" : "entry");
     input.value = "";
     if (repl) repl.buffer = [];
     updatePrompt();
+  } else {
+    return false;
   }
+  return true;
+}
+
+input.addEventListener("keydown", (event) => {
+  if (handleKey(event.key, event.ctrlKey)) event.preventDefault();
 });
 
 // Ctrl+C stops running Python wherever the focus is.
 document.addEventListener("keydown", (event) => {
-  if (!running || !event.ctrlKey || event.key !== "c" || !getSelection().isCollapsed) return;
+  if (event.target === input || !running || !event.ctrlKey || event.key !== "c") return;
+  if (!getSelection().isCollapsed) return;
   event.preventDefault();
   running.interrupt();
+});
+
+// On-screen keys. Cancelling the press keeps the focus, and with it the touch
+// keyboard, on the input.
+const keys = form.querySelector(".keys");
+for (const type of ["pointerdown", "mousedown"]) {
+  keys.addEventListener(type, (event) => event.preventDefault());
+}
+keys.addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  handleKey(button.dataset.key, "ctrl" in button.dataset);
+  form.scrollIntoView({ block: "nearest" });
+});
+
+// A way back to the prompt when it is off screen, for visitors without a
+// keyboard to start typing on.
+const toPrompt = document.getElementById("to-prompt");
+new IntersectionObserver(([entry]) => (toPrompt.hidden = entry.isIntersecting)).observe(form);
+toPrompt.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  form.scrollIntoView({ block: "center" });
+  input.focus({ preventScroll: true });
+});
+
+// The touch keyboard shrinks the visible area: keep the prompt above it.
+window.visualViewport?.addEventListener("resize", () => {
+  if (document.activeElement === input) form.scrollIntoView({ block: "nearest" });
 });
 
 // Typing anywhere lands in the prompt, and typing brings the prompt back into view.
@@ -474,6 +519,13 @@ document.addEventListener("click", (event) => {
   if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
   if (anchor.target === "_blank" || anchor.hasAttribute("download")) return;
 
+  if (anchor.dataset.complete !== undefined) {
+    event.preventDefault();
+    input.value = anchor.dataset.complete;
+    input.focus({ preventScroll: true });
+    form.scrollIntoView({ block: "nearest" });
+    return;
+  }
   if (anchor.dataset.action === "copy") {
     event.preventDefault();
     copyBlock(anchor);
