@@ -2,7 +2,7 @@
 <html lang="{{ config.lang }}" data-base="{{ base }}" data-user="{{ config.user }}" data-host="{{ config.host }}" data-ps1="{{ config.ps1 }}" data-cwd="{{ cwd }}" data-theme="{{ config.theme }}" data-themes="{{ themes|join(' ') }}"{% if config.python %} data-python="assets/python/"{% endif %}>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>{% if title and title != config.site_name %}{{ title }} — {% endif %}{{ config.site_name }}</title>
 {% if description %}
 <meta name="description" content="{{ description }}">
@@ -64,10 +64,22 @@ try {
         {% block output %}{% endblock %}
       </section>
     </div>
-    <form id="prompt" class="cmdline" autocomplete="off" hidden>
-      <label class="ps1" for="input">{{ ps1 }}</label>
-      <input id="input" type="text" aria-label="Command" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="go">
+    <form id="prompt" autocomplete="off" hidden>
+      <div class="cmdline">
+        <label class="ps1" for="input">{{ ps1 }}</label>
+        <input id="input" type="text" aria-label="Command" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="go">
+      </div>
+      {# Stand-ins for the keys a touch keyboard lacks; shown on touch screens only. #}
+      <div class="keys" role="group" aria-label="Terminal keys">
+        <button type="button" data-key="Tab" aria-label="Complete">tab</button>
+        <button type="button" data-key="ArrowUp" aria-label="Previous command">↑</button>
+        <button type="button" data-key="ArrowDown" aria-label="Next command">↓</button>
+        <button type="button" data-key="c" data-ctrl aria-label="Interrupt">^C</button>
+        <button type="button" data-key="d" data-ctrl class="repl-only" aria-label="Leave Python">^D</button>
+        <button type="button" data-key="l" data-ctrl aria-label="Clear the screen">^L</button>
+      </div>
     </form>
+    <a id="to-prompt" href="#prompt" aria-label="Go to the prompt" hidden>$_</a>
   </main>
 </div>
 <script type="module" src="{{ base }}assets/js/term.js"></script>

@@ -32,6 +32,21 @@ clickable too, so the site can be browsed without typing at all.
 - <kbd>↑</kbd> and <kbd>↓</kbd> walk the history
 - <kbd>Ctrl</kbd>+<kbd>L</kbd> clears the screen and <kbd>Ctrl</kbd>+<kbd>C</kbd> discards the line
 
+## On a phone
+
+Touch screens get a few extras, since their keyboards have no
+<kbd>Tab</kbd>, arrows or <kbd>Ctrl</kbd>:
+
+- a row of keys under the prompt: `tab`, `↑`, `↓`, `^C` and `^L`, plus `^D`
+  inside the Python REPL
+- completions are listed as links, so one tap picks a file
+- the command bar stays at the top of the screen while you read, and scrolls
+  sideways
+- a `$_` button in the corner jumps back to the prompt when it is off screen
+
+Tapping an article never opens the keyboard: it only appears when you tap
+the prompt or the `$_` button.
+
 ## Search
 
 `grep` looks through the original markdown line by line and accepts regular

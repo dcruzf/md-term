@@ -145,3 +145,10 @@ test("formatPrompt fills the ps1 placeholders", () => {
   assert.equal(formatPrompt("{dir} {path} >", { ...site, cwd: "/" }), "~ ~ >");
   assert.equal(formatPrompt("{nope} $", { ...site, cwd: "/" }), "{nope} $");
 });
+
+test("complete reports the untouched head of the line, for clickable candidates", () => {
+  const shell = make();
+  const { head, candidates } = shell.complete("cat blog/");
+  assert.equal(head, "cat ");
+  assert.deepEqual(candidates.map((candidate) => head + candidate), ["cat blog/first.md ", "cat blog/second.md "]);
+});
