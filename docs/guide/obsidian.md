@@ -91,7 +91,7 @@ other properties, such as `aliases`, are ignored.
 
 The note called `index` at the root of the folder is the home page, and its
 properties can also name and style the whole site: `site_name`,
-`site_description`, `site_theme` and a few more. See
+`site_description`, `site_theme`, `site_icon` and a few more. See
 [Settings in the home page](configuration.md#settings-in-the-home-page).
 
 ## Not supported

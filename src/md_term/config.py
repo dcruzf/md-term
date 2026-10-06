@@ -25,6 +25,7 @@ PAGE_SETTINGS = {
     "site_ps1": "ps1",
     "site_motd": "motd",
     "site_theme": "theme",
+    "site_icon": "icon",
 }
 PYTHON_RUNTIMES = ("monty", "pyodide")
 # A package name with an optional version specifier, as micropip accepts.
@@ -49,6 +50,7 @@ class Config:
     host: str = ""
     ps1: str = "{user}@{host}:{path}$"
     motd: str = ""
+    icon: str = ""  # favicon: a file in docs, a URL, `set:name` (Iconify), an emoji or short text
     theme: str = THEMES[0]
     colors: dict[str, str] = field(default_factory=dict)
     extra_css: list[str] = field(default_factory=list)
