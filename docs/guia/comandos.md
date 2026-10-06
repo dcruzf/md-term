@@ -21,6 +21,7 @@ que um comando lista também é clicável, então dá para navegar sem digitar n
 | `posts`                  | lista os posts, do mais novo ao mais antigo     |
 | `tags`                   | lista as tags                                   |
 | `tag <nome>`             | lista as páginas de uma tag                     |
+| `python [-c código]`     | abre o [REPL de Python](python.md), se o site o ativou |
 | `theme [nome]`           | lista os [temas](temas.md) ou troca de tema     |
 | `history`                | mostra os comandos já digitados                 |
 | `clear`                  | limpa a tela                                    |

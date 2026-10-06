@@ -9,6 +9,8 @@ blog com `ls`, `cd`, `cat` e `grep`.
 - Com JavaScript, a página ganha um prompt com histórico, autocompletar e
   busca full-text. Tudo o que é listado também é clicável.
 - Posts com data, tags e feed RSS.
+- Python opcional no navegador (REPL e blocos executáveis), com o
+  interpretador Monty em WebAssembly baixado só quando o visitante o usa.
 - Seis temas de cores (`phosphor`, `amber`, `ice`, `mono`, `dracula`, `paper`) e paleta
   configurável no `md-term.toml`.
 
@@ -39,6 +41,10 @@ uv run ruff check . && uv run ruff format --check .
 O gerador fica em `src/md_term/` (Python). O front-end é JavaScript e CSS
 puros em `src/md_term/assets/`, sem etapa de build: `shell.js` e `vfs.js`
 não tocam o DOM e são testados com o Node; `term.js` cuida da interface.
+
+O código de cola do interpretador Python fica em `src/md_term/runtimes/monty/`
+e é gerado por `tools/monty-glue` (`npm install && npm run build`). Rode-o de
+novo ao atualizar a versão do Monty.
 
 ## Licença
 

@@ -232,6 +232,14 @@ a:focus-visible {
   scroll-margin-top: 0.75rem;
 }
 
+.entry.repl {
+  margin-bottom: 0.1rem;
+}
+
+.entry.repl pre.plain {
+  margin-top: 0;
+}
+
 .cmdline {
   display: flex;
   flex-wrap: wrap;
@@ -521,6 +529,28 @@ mark {
 
 .prose pre code {
   color: var(--fg);
+}
+
+/* [run] link on Python blocks, added by the shell when Python is enabled. */
+.prose pre {
+  position: relative;
+}
+
+.prose pre .run {
+  position: absolute;
+  top: 0.3em;
+  right: 1ch;
+  text-decoration: none;
+}
+
+.prose pre .run::before {
+  content: "[";
+  color: var(--fg-dim);
+}
+
+.prose pre .run::after {
+  content: "]";
+  color: var(--fg-dim);
 }
 
 /* Pygments tokens, kept within the phosphor palette. */

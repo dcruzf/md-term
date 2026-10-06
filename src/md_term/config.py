@@ -33,6 +33,7 @@ class Config:
     theme: str = THEMES[0]
     colors: dict[str, str] = field(default_factory=dict)
     extra_css: list[str] = field(default_factory=list)
+    python: bool = False
 
     def __post_init__(self) -> None:
         if self.theme not in THEMES:
@@ -77,6 +78,8 @@ def load_config(path: Path) -> Config:
         elif key == "extra_css":
             valid = isinstance(value, list) and all(isinstance(v, str) for v in value)
             expected = "a list of strings"
+        elif key == "python":
+            valid, expected = isinstance(value, bool), "true or false"
         else:
             valid, expected = isinstance(value, str), "a string"
         if not valid:

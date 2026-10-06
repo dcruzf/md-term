@@ -5,6 +5,7 @@ lang = "pt-BR"
 
 user = "visitante"
 host = "md-term"
+python = true
 
 motd = """
 md-term 0.1.0 :: base de conhecimento em modo texto

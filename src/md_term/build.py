@@ -17,6 +17,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from .config import THEMES, Config, MdTermError
 from .content import Page, Site, load_site
 from .markdown import make_renderer, render
+from .python_runtime import install as install_python
 
 log = logging.getLogger("md_term")
 
@@ -147,6 +148,8 @@ def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> 
         _write(out / "feed.xml", _feed(env, config, site))
 
     _copy_assets(out / "assets")
+    if config.python:
+        install_python(out / "assets" / "python")
     for src in site.static:
         target = out / src
         target.parent.mkdir(parents=True, exist_ok=True)

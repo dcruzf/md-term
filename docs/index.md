@@ -17,6 +17,7 @@ $ cat guia/instalacao.md
 - [Comandos do shell](guia/comandos.md): tudo o que o visitante pode digitar
 - [Configuração](guia/configuracao.md): as opções do `md-term.toml`
 - [Temas e cores](guia/temas.md): temas prontos e como criar o seu
+- [Python no navegador](guia/python.md): REPL e blocos de código executáveis
 - [Publicando](guia/publicando.md): GitHub Pages e outras hospedagens
 
 ## Referência

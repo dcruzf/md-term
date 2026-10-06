@@ -22,6 +22,9 @@ motd = "Welcome. Type 'help' or click a command above."
 # Color theme: phosphor, amber, ice, mono, dracula or paper.
 theme = "phosphor"
 
+# Python REPL and runnable code blocks, running in the visitor's browser.
+# python = true
+
 # Override individual colors of the theme.
 # [colors]
 # fg_bright = "#00ff9c"

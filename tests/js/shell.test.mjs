@@ -123,3 +123,17 @@ test("theme lists, switches and completes", async () => {
   assert.equal(shell.complete("theme a").line, "theme amber ");
   assert.deepEqual(shell.complete("theme p").candidates, ["paper ", "phosphor "]);
 });
+
+test("python is only available when the site enables it", async () => {
+  const off = make();
+  assert.equal((await off.run("python")).out[0].text, "python: not enabled on this site");
+  assert.ok(!(await off.run("help")).out[0].rows.some((row) => row.usage.startsWith("python")));
+  assert.deepEqual(off.complete("py").candidates, []);
+
+  const on = createShell({ nodes, python: true });
+  assert.deepEqual((await on.run("python")).python, { repl: true });
+  assert.deepEqual((await on.run('python -c "print(1 + 1)"')).python, { code: "print(1 + 1)" });
+  assert.equal((await on.run("python script.py")).out[0].type, "error");
+  assert.ok((await on.run("help")).out[0].rows.some((row) => row.usage.startsWith("python")));
+  assert.equal(on.complete("py").line, "python ");
+});

@@ -19,7 +19,8 @@ site/
 ├── tags/                      índice de tags e uma página por tag
 ├── assets/
 │   ├── term.css               tema
-│   └── js/                    shell do navegador
+│   ├── js/                    shell do navegador
+│   └── python/                interpretador Python, só com python = true
 ├── fs.json                    árvore de arquivos para o shell
 ├── search.json                texto de todas as páginas, para o grep
 └── feed.xml                   RSS, quando há posts e site_url
@@ -60,6 +61,8 @@ partir daí:
 - `grep` baixa o `search.json` na primeira busca e procura linha a linha no
   markdown original
 - links dentro dos artigos viram um `cat`, sem recarregar a página
+- `python` baixa o interpretador na primeira vez e o executa em um Web
+  Worker; veja [Python no navegador](../guia/python.md)
 
 O histórico de comandos fica guardado durante a sessão do navegador, e o
 tema escolhido com `theme` fica salvo entre visitas. Nada é enviado a

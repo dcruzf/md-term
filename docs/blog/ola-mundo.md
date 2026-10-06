@@ -20,6 +20,9 @@ O que já funciona:
 def saudacao(nome: str) -> str:
     # o realce de sintaxe é feito no build
     return f"olá, {nome}"
+
+
+print(saudacao("mundo"))
 ```
 
 Os detalhes estão no [guia](../guia/instalacao.md).

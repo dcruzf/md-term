@@ -13,8 +13,10 @@ const COMMANDS = {
   help: {
     usage: "help",
     summary: "show this list",
-    run() {
-      const rows = Object.values(COMMANDS).map(({ usage, summary }) => ({ usage, summary }));
+    run(shell) {
+      const rows = Object.entries(COMMANDS)
+        .filter(([name]) => name !== "python" || shell.python)
+        .map(([, { usage, summary }]) => ({ usage, summary }));
       return {
         out: [
           { type: "help", rows },
@@ -189,6 +191,19 @@ const COMMANDS = {
     },
   },
 
+  python: {
+    usage: "python [-c code]",
+    summary: "start a Python REPL, or run one line of code",
+    run(shell, args) {
+      if (!shell.python) return { out: [error("python: not enabled on this site")] };
+      if (args[0] === "-c" && args.length > 1) {
+        return { out: [], python: { code: args.slice(1).join(" ") } };
+      }
+      if (args.length) return { out: [error("usage: python [-c code]")] };
+      return { out: [], python: { repl: true } };
+    },
+  },
+
   theme: {
     usage: "theme [name]",
     summary: "list the color themes, or switch to one",
@@ -267,6 +282,7 @@ export function createShell({
   cwd = "/",
   themes = [],
   theme = themes[0],
+  python = false,
   loadSearch = async () => [],
 }) {
   const shell = {
@@ -274,6 +290,7 @@ export function createShell({
     tags,
     themes,
     theme,
+    python,
     cwd: nodes[cwd]?.type === "dir" ? cwd : "/",
     history: [],
     loadSearch,
@@ -310,7 +327,9 @@ export function createShell({
       let candidates;
       if (tokens.length === 0 || (tokens.length === 1 && !fresh)) {
         const names = [...Object.keys(COMMANDS), ...Object.keys(ALIASES)];
-        candidates = names.filter((name) => name.startsWith(word)).map((name) => name + " ");
+        candidates = names
+          .filter((name) => name.startsWith(word) && (name !== "python" || python))
+          .map((name) => name + " ");
       } else if ((ALIASES[tokens[0]] ?? tokens[0]) === "tag") {
         const lower = word.toLowerCase();
         candidates = Object.keys(tags)

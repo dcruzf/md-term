@@ -1,0 +1,31 @@
+{
+  "name": "monty",
+  "version": "1.1.0",
+  "tarball": "https://registry.npmjs.org/@pydantic/monty/-/monty-1.1.0.tgz",
+  "glue": [
+    "monty.js",
+    "monty.worker.js"
+  ],
+  "files": {
+    "monty.component.core.wasm": {
+      "member": "package/dist/worker/component/monty.component.core.wasm",
+      "size": 22643684,
+      "sha256": "5149bdbf29b83fe63421f16e4d7858fc4faed29bdf4fb7a369f32f155ebe62ac"
+    },
+    "monty.component.core2.wasm": {
+      "member": "package/dist/worker/component/monty.component.core2.wasm",
+      "size": 13809,
+      "sha256": "e764a442d40199804739a8fcf8b06897d9cd21dc8aae33c067fbe9d38eaaf73e"
+    },
+    "monty.component.core3.wasm": {
+      "member": "package/dist/worker/component/monty.component.core3.wasm",
+      "size": 498,
+      "sha256": "f6ca4d98715d3eb51fb58a9cfc6ee558fd2bc7ca8eee48bdea9dda96e6334186"
+    },
+    "monty.component.core4.wasm": {
+      "member": "package/dist/worker/component/monty.component.core4.wasm",
+      "size": 272,
+      "sha256": "85022c45607e585ab1f7bd648ecd60907ec8ec91d37461a7919c6539714723e8"
+    }
+  }
+}

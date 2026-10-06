@@ -1,9 +1,13 @@
+import hashlib
+import io
 import json
+import tarfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
 
+from md_term import python_runtime
 from md_term.build import build, relurl
 from md_term.config import THEMES, Config, MdTermError, load_config
 from md_term.content import parse_page
@@ -191,3 +195,77 @@ def test_config_rejects_bad_theme_and_colors(tmp_path: Path):
             load_config(path)
     path.write_text('theme = "ice"\n[colors]\nbg = "rgb(0 10 20 / 90%)"\n')
     assert load_config(path).colors == {"bg": "rgb(0 10 20 / 90%)"}
+
+
+@pytest.fixture
+def fake_runtime(tmp_path: Path, monkeypatch):
+    """A tiny stand-in for the Monty tarball, served from a file:// URL."""
+    payload = {"core.wasm": b"\0asm-core", "core2.wasm": b"\0asm-two"}
+    archive = tmp_path / "runtime.tgz"
+    with tarfile.open(archive, "w:gz") as tar:
+        for name, data in payload.items():
+            info = tarfile.TarInfo(f"package/dist/{name}")
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+    spec = python_runtime.load_spec() | {
+        "tarball": archive.as_uri(),
+        "files": {
+            name: {
+                "member": f"package/dist/{name}",
+                "size": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+            for name, data in payload.items()
+        },
+    }
+    monkeypatch.setattr(python_runtime, "load_spec", lambda: spec)
+    monkeypatch.setenv("MD_TERM_CACHE", str(tmp_path / "cache"))
+    return spec, archive
+
+
+def test_python_is_off_by_default(project: Config):
+    build(project)
+    assert not (project.site_path / "assets" / "python").exists()
+    assert "data-python" not in read(project, "index.html")
+
+
+def test_python_runtime_is_installed_and_cached(project: Config, fake_runtime):
+    _, archive = fake_runtime
+    project.python = True
+    build(project)
+    target = project.site_path / "assets" / "python"
+    manifest = json.loads((target / "manifest.json").read_text())
+    assert manifest["runtime"] == "monty" and manifest["glue"] == "monty.js"
+    assert manifest["files"] == {"core.wasm": 9, "core2.wasm": 8}
+    assert (target / "core.wasm").read_bytes() == b"\0asm-core"
+    assert (target / "monty.js").stat().st_size > 1000
+    assert (target / "monty.worker.js").exists()
+    assert 'data-python="assets/python/"' in read(project, "blog/first/index.html")
+
+    archive.unlink()  # a second build must be served from the cache, offline
+    build(project)
+    assert (project.site_path / "assets" / "python" / "core2.wasm").exists()
+
+
+def test_python_runtime_rejects_tampered_download(project: Config, fake_runtime):
+    spec, _ = fake_runtime
+    spec["files"]["core.wasm"]["sha256"] = "0" * 64
+    project.python = True
+    with pytest.raises(MdTermError, match="checksum mismatch for core.wasm"):
+        build(project)
+
+
+def test_python_runtime_download_failure(project: Config, fake_runtime):
+    _, archive = fake_runtime
+    archive.unlink()
+    project.python = True
+    with pytest.raises(MdTermError, match="could not download the Python runtime"):
+        build(project)
+
+
+def test_vendored_runtime_spec_is_consistent():
+    spec = python_runtime.load_spec()
+    assert spec["tarball"].endswith(f"monty-{spec['version']}.tgz")
+    for name in spec["glue"]:
+        assert (Path(python_runtime.__file__).parent / "runtimes" / "monty" / name).is_file()
+    assert all(len(info["sha256"]) == 64 for info in spec["files"].values())

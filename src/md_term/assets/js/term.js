@@ -1,6 +1,7 @@
 // The terminal UI. Every page is complete static HTML; this script turns it
 // into a live shell on top of fs.json, fetching other pages on demand.
 
+import { loadPython, needsMoreInput } from "./python.js";
 import { createShell } from "./shell.js";
 import { display, quote } from "./vfs.js";
 
@@ -95,10 +96,10 @@ const RENDER = {
   },
 };
 
-function newEntry(line) {
-  const entry = el("section", "entry");
+function newEntry(line, prompt = ps1(), cls = "entry") {
+  const entry = el("section", cls);
   const cmdline = el("div", "cmdline");
-  cmdline.append(el("span", "ps1", ps1()), " ", el("span", "cmd", line));
+  cmdline.append(el("span", "ps1", prompt), " ", el("span", "cmd", line));
   entry.append(cmdline);
   scrollback.append(entry);
   return entry;
@@ -121,6 +122,7 @@ async function openFile(path, entry, { push }) {
     return;
   }
   absolutize(content, url);
+  decorate(content);
   content.removeAttribute("id");
   entry.append(document.adoptNode(content));
   document.title = page.title;
@@ -162,31 +164,161 @@ function reveal(entry, anchor) {
 
 const finePointer = matchMedia("(pointer: fine)");
 
-async function run(line, { push = true, target = null } = {}) {
+// ── Python ───────────────────────────────────────────────────────────
+// Enabled per site (data-python holds the runtime's directory). The runtime is
+// downloaded the first time it is needed, never on page load.
+
+const pythonBase = root.dataset.python ? siteUrl(root.dataset.python) : null;
+let python = null; // promise of the loaded runtime
+let running = null; // the runtime while it executes code, for Ctrl+C
+let repl = null; // { history, buffer } while the Python REPL owns the prompt
+
+const megabytes = (bytes) => (bytes / 1e6).toFixed(1);
+
+async function getRuntime(entry) {
+  if (!python) {
+    const line = el("pre", "plain dim", "Loading Python…");
+    entry.append(line);
+    form.scrollIntoView({ block: "nearest" });
+    let shown = -1;
+    python = loadPython(pythonBase, (loaded, total) => {
+      const percent = Math.floor((100 * loaded) / total);
+      if (percent === shown) return;
+      shown = percent;
+      const filled = Math.floor(percent / 5);
+      const bar = "#".repeat(filled) + ".".repeat(20 - filled);
+      line.textContent =
+        `Downloading Python [${bar}] ${String(percent).padStart(3)}%  ` +
+        `${megabytes(loaded)}/${megabytes(total)} MB`;
+    }).finally(() => line.remove());
+  }
+  try {
+    return await python;
+  } catch (err) {
+    python = null; // let the next attempt retry the download
+    entry.append(RENDER.error({ text: `python: could not load the runtime: ${err.message}` }));
+    return null;
+  }
+}
+
+async function runPython(code, entry, { echo = false } = {}) {
+  const runtime = await getRuntime(entry);
+  if (!runtime) return;
+  const out = el("pre", "plain");
+  entry.append(out);
+  running = runtime;
+  try {
+    const result = await runtime.run(code, {
+      echo,
+      onPrint(text, stream) {
+        out.append(stream === "stderr" ? el("span", "error", text) : text);
+        form.scrollIntoView({ block: "nearest" });
+      },
+    });
+    if (result.value != null) out.append(result.value + "\n");
+    if (result.error) entry.append(RENDER.error({ text: result.error }));
+    if (result.restarted) {
+      entry.append(el("pre", "plain dim", "(Python session restarted: variables were lost)"));
+    }
+  } finally {
+    running = null;
+    if (!out.textContent) out.remove();
+  }
+  form.scrollIntoView({ block: "nearest" });
+}
+
+async function startRepl(entry) {
+  const runtime = await getRuntime(entry);
+  if (!runtime) return;
+  entry.append(el("pre", "plain dim", `${runtime.label}.\nexit() or Ctrl+D to leave.`));
+  repl = { history: [], buffer: [] };
+  historyIndex = 0;
+  form.scrollIntoView({ block: "nearest" });
+}
+
+function leaveRepl() {
+  repl = null;
+  historyIndex = shell.history.length;
+}
+
+const replPrompt = () => (repl.buffer.length ? "..." : ">>>");
+
+// One REPL line: a block is collected until an empty line, then run.
+async function replSubmit(line) {
+  const entry = newEntry(line, replPrompt(), "entry repl");
+  if (line.trim()) repl.history.push(line);
+  historyIndex = repl.history.length;
+  let code = null;
+  let echo = false;
+  if (repl.buffer.length) {
+    if (line.trim()) repl.buffer.push(line);
+    else {
+      code = repl.buffer.join("\n");
+      repl.buffer = [];
+    }
+  } else if (/^(exit|quit)(\(\))?$/.test(line.trim())) {
+    leaveRepl();
+  } else if (needsMoreInput(line)) {
+    repl.buffer.push(line);
+  } else if (line.trim()) {
+    code = line;
+    echo = true;
+  }
+  if (code !== null) await runPython(code, entry, { echo });
+  form.scrollIntoView({ block: "nearest" });
+}
+
+// Adds a [run] link to Python code blocks.
+function decorate(scope) {
+  if (!pythonBase) return;
+  for (const code of scope.querySelectorAll("pre > code.language-python, pre > code.language-py")) {
+    if (code.parentElement.querySelector(".run")) continue;
+    const link = el("a", "run", "run");
+    link.href = "#run";
+    link.dataset.run = "";
+    link.title = "Run this block in your browser";
+    code.parentElement.append(link);
+  }
+}
+
+function updatePrompt() {
+  promptLabel.textContent = repl ? replPrompt() : ps1();
+}
+
+// Hides the prompt while `task` prints, then hands the focus back to it.
+async function whileBusy(task) {
   // Commands started from a link leave the focus on that link; hand it back to
   // the prompt. On touch screens only keep it, so a tap never opens the keyboard.
   const keepFocus = document.activeElement === input || finePointer.matches;
   form.classList.add("busy");
   try {
-    await execute(line, { push, target });
+    await task();
   } finally {
     form.classList.remove("busy");
+    updatePrompt();
     if (keepFocus) input.focus({ preventScroll: true });
   }
 }
 
-async function execute(line, { push, target }) {
+function run(line, { push = true, target = null, python: code = null } = {}) {
+  return whileBusy(() => execute(line, { push, target, code }));
+}
+
+async function execute(line, { push, target, code }) {
   const entry = newEntry(line);
   let result;
-  try {
-    result = await shell.run(line);
-  } catch (err) {
-    result = { out: [{ type: "error", text: `${line.trim().split(/\s+/)[0]}: ${err.message}` }] };
+  if (code !== null) {
+    result = { out: [], python: { code } }; // a [run] link: nothing for the shell to parse
+  } else {
+    try {
+      result = await shell.run(line);
+    } catch (err) {
+      result = { out: [{ type: "error", text: `${line.trim().split(/\s+/)[0]}: ${err.message}` }] };
+    }
+    if (!repl) historyIndex = shell.history.length;
+    saveHistory();
   }
-  historyIndex = shell.history.length;
-  saveHistory();
 
-  promptLabel.textContent = ps1();
   root.dataset.cwd = shell.cwd;
   if (result.theme) {
     root.dataset.theme = result.theme;
@@ -206,6 +338,8 @@ async function execute(line, { push, target }) {
   for (const node of lines) node.classList.add("printing"); // hidden but laid out, so the scroll is final
   reveal(entry, target && entry.querySelector(`[id="${CSS.escape(target)}"]`));
   await print(lines);
+  if (result.python?.repl) await startRepl(entry);
+  else if (result.python) await runPython(result.python.code, entry);
 }
 
 async function openPath(path) {
@@ -239,32 +373,57 @@ function showCandidates(candidates) {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (form.classList.contains("busy")) return; // keep what was typed ahead for the next Enter
   const line = input.value;
   input.value = "";
   draft = "";
-  run(line);
+  if (repl) whileBusy(() => replSubmit(line));
+  else run(line);
 });
 
 input.addEventListener("keydown", (event) => {
+  const lines = repl ? repl.history : shell.history;
   if (event.key === "Tab") {
     event.preventDefault();
+    if (repl) {
+      input.setRangeText("    ", input.selectionStart, input.selectionEnd, "end"); // indent
+      return;
+    }
     const { line, candidates } = shell.complete(input.value);
     input.value = line;
     if (candidates.length) showCandidates(candidates);
   } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
     event.preventDefault();
-    if (historyIndex === shell.history.length) draft = input.value;
+    if (historyIndex === lines.length) draft = input.value;
     const step = event.key === "ArrowUp" ? -1 : 1;
-    historyIndex = Math.max(0, Math.min(shell.history.length, historyIndex + step));
-    input.value = shell.history[historyIndex] ?? draft;
+    historyIndex = Math.max(0, Math.min(lines.length, historyIndex + step));
+    input.value = lines[historyIndex] ?? draft;
   } else if (event.ctrlKey && event.key === "l") {
     event.preventDefault();
-    run("clear");
-  } else if (event.ctrlKey && event.key === "c" && input.selectionStart === input.selectionEnd) {
+    if (repl) {
+      scrollback.replaceChildren();
+      scrollTo(0, 0);
+    } else run("clear");
+  } else if (event.ctrlKey && event.key === "d" && repl && input.value === "") {
     event.preventDefault();
-    newEntry(input.value + "^C");
+    newEntry("^D", replPrompt(), "entry repl");
+    leaveRepl();
+    updatePrompt();
+  } else if (event.ctrlKey && event.key === "c" && !running) {
+    if (input.selectionStart !== input.selectionEnd) return; // let the browser copy
+    event.preventDefault();
+    newEntry(input.value + "^C", repl ? replPrompt() : ps1(), repl ? "entry repl" : "entry");
     input.value = "";
+    if (repl) repl.buffer = [];
+    updatePrompt();
   }
+});
+
+// Ctrl+C stops running Python wherever the focus is.
+document.addEventListener("keydown", (event) => {
+  if (!running || !event.ctrlKey || event.key !== "c" || !getSelection().isCollapsed) return;
+  event.preventDefault();
+  running.interrupt();
 });
 
 // Typing anywhere lands in the prompt, and typing brings the prompt back into view.
@@ -288,6 +447,13 @@ document.addEventListener("click", (event) => {
   if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
   if (anchor.target === "_blank" || anchor.hasAttribute("download")) return;
 
+  if (anchor.dataset.run !== undefined) {
+    event.preventDefault();
+    if (form.classList.contains("busy")) return;
+    const code = anchor.closest("pre").querySelector("code").textContent;
+    run("python  # code block", { python: code });
+    return;
+  }
   if (anchor.dataset.cmd) {
     event.preventDefault();
     run(anchor.dataset.cmd);
@@ -337,12 +503,14 @@ async function start() {
     cwd: root.dataset.cwd,
     themes: (root.dataset.themes ?? "").split(" ").filter(Boolean),
     theme: root.dataset.theme,
+    python: Boolean(pythonBase),
     loadSearch: () => (search ??= fetch(siteUrl("search.json")).then((r) => r.json())),
   });
   shell.history = loadHistory();
   historyIndex = shell.history.length;
 
   absolutize(document.body, location.href);
+  decorate(document);
   const current = document.getElementById("content")?.dataset.path;
   history.replaceState({ path: current ?? null }, "");
 

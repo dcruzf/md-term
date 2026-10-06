@@ -21,6 +21,8 @@ md-term build
   incluí-los em um ambiente de prévia.
 - Confira os avisos do build: links para arquivos `.md` que não existem são
   listados ali.
+- Com `python = true`, o build precisa de rede na primeira vez, para baixar
+  o interpretador, e o site publicado fica cerca de 23 MB maior.
 
 ## Subcaminhos
 

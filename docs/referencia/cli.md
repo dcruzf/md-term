@@ -82,5 +82,6 @@ E para com erro quando:
 - o `md-term.toml` tem uma opção desconhecida, um tema inexistente ou uma
   cor inválida
 - `site_dir` não está vazio e não foi criado pelo md-term
+- `python = true` e o interpretador não está no cache nem pôde ser baixado
 
 Veja [como publicar](../guia/publicando.md) o resultado.
