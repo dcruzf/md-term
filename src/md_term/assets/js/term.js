@@ -160,12 +160,18 @@ function reveal(entry, anchor) {
   } else entry.scrollIntoView({ block: "start" });
 }
 
+const finePointer = matchMedia("(pointer: fine)");
+
 async function run(line, { push = true, target = null } = {}) {
+  // Commands started from a link leave the focus on that link; hand it back to
+  // the prompt. On touch screens only keep it, so a tap never opens the keyboard.
+  const keepFocus = document.activeElement === input || finePointer.matches;
   form.classList.add("busy");
   try {
     await execute(line, { push, target });
   } finally {
     form.classList.remove("busy");
+    if (keepFocus) input.focus({ preventScroll: true });
   }
 }
 
@@ -272,7 +278,7 @@ input.addEventListener("input", () => form.scrollIntoView({ block: "nearest" }))
 // Clicking the empty screen focuses the prompt, unless the click selected text.
 document.querySelector(".screen").addEventListener("click", (event) => {
   if (event.target.closest("a, input, button, summary")) return;
-  if (!matchMedia("(pointer: fine)").matches) return; // a tap would summon the keyboard
+  if (!finePointer.matches) return; // a tap would summon the keyboard
   if (getSelection().isCollapsed) input.focus({ preventScroll: true });
 });
 
@@ -342,7 +348,7 @@ async function start() {
 
   root.classList.add("js");
   form.hidden = false;
-  if (matchMedia("(pointer: fine)").matches) input.focus({ preventScroll: true });
+  if (finePointer.matches) input.focus({ preventScroll: true });
 }
 
 start().catch((err) => console.error("md-term: shell unavailable, falling back to plain links", err));
