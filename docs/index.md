@@ -1,36 +1,37 @@
 # md-term
 
-O **md-term** transforma uma pasta de arquivos markdown em um site estático
-com cara de terminal. É parecido com o mkdocs, só que o visitante navega pelo
-conteúdo como quem usa um shell.
+**md-term** turns a folder of markdown files into a static site that looks
+and works like a terminal. Think of mkdocs, except that visitors browse the
+content the way they would use a shell.
 
 ```console
 $ ls
-blog/  guia/  index.md
-$ cat guia/instalacao.md
+blog/  guide/  reference/  index.md
+$ cat guide/installation.md
 ```
 
-## Por onde começar
+## Where to start
 
-- [Instalação](guia/instalacao.md): crie e publique o seu primeiro site
-- [Escrevendo páginas](guia/escrevendo.md): front matter, links e posts
-- [Comandos do shell](guia/comandos.md): tudo o que o visitante pode digitar
-- [Configuração](guia/configuracao.md): as opções do `md-term.toml`
-- [Temas e cores](guia/temas.md): temas prontos e como criar o seu
-- [Python no navegador](guia/python.md): REPL e blocos de código executáveis
-- [Publicando](guia/publicando.md): GitHub Pages e outras hospedagens
+- [Installation](guide/installation.md): create and build your first site
+- [Writing pages](guide/writing.md): front matter, links and posts
+- [Markdown](guide/markdown.md): alerts, formulas, diagrams and the rest
+- [Shell commands](guide/commands.md): everything a visitor can type
+- [Configuration](guide/configuration.md): the options in `md-term.toml`
+- [Themes and colors](guide/themes.md): the built-in themes and how to make your own
+- [Python in the browser](guide/python.md): a REPL and runnable code blocks
+- [Publishing](guide/publishing.md): GitHub Pages and other hosts
 
-## Referência
+## Reference
 
-- [Linha de comando](referencia/cli.md): `new`, `serve` e `build`
-- [Como funciona](referencia/arquitetura.md): o que o build gera e como o
-  shell navega
+- [Command line](reference/cli.md): `new`, `serve` and `build`
+- [How it works](reference/architecture.md): what the build writes and how the
+  shell navigates
 
-## Como funciona
+## The idea
 
-Cada `.md` vira uma página HTML completa, então o site funciona sem
-JavaScript, é indexado por buscadores e todo link pode ser compartilhado.
-Com JavaScript ligado, a página ganha um prompt de verdade: `ls`, `cd`,
-`cat`, `grep`, histórico e autocompletar com Tab.
+Every `.md` file becomes a complete HTML page, so the site works without
+JavaScript, search engines can index it and any address can be shared. With
+JavaScript on, the page gains a real prompt: `ls`, `cd`, `cat`, `grep`,
+history and tab completion.
 
-Novidades ficam no [blog](blog/temas.md).
+News goes to the [blog](blog/color-themes.md).
