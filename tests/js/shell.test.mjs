@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { createShell } from "../../src/md_term/assets/js/shell.js";
-import { display, quote, resolve, tokenize } from "../../src/md_term/assets/js/vfs.js";
+import { display, formatPrompt, quote, resolve, tokenize } from "../../src/md_term/assets/js/vfs.js";
 
 const nodes = {
   "/": { type: "dir", url: "", children: ["blog", "guide", "index.md"] },
@@ -136,4 +136,12 @@ test("python is only available when the site enables it", async () => {
   assert.equal((await on.run("python script.py")).out[0].type, "error");
   assert.ok((await on.run("help")).out[0].rows.some((row) => row.usage.startsWith("python")));
   assert.equal(on.complete("py").line, "python ");
+});
+
+test("formatPrompt fills the ps1 placeholders", () => {
+  const site = { user: "ana", host: "docs" };
+  assert.equal(formatPrompt("{user}@{host}:{path}$", { ...site, cwd: "/blog/2026" }), "ana@docs:~/blog/2026$");
+  assert.equal(formatPrompt("λ {dir}", { ...site, cwd: "/blog/2026" }), "λ 2026");
+  assert.equal(formatPrompt("{dir} {path} >", { ...site, cwd: "/" }), "~ ~ >");
+  assert.equal(formatPrompt("{nope} $", { ...site, cwd: "/" }), "{nope} $");
 });

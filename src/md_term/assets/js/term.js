@@ -3,7 +3,7 @@
 
 import { loadPython, needsMoreInput } from "./python.js";
 import { createShell } from "./shell.js";
-import { display, quote } from "./vfs.js";
+import { display, formatPrompt, quote } from "./vfs.js";
 
 const root = document.documentElement;
 const BASE = new URL(root.dataset.base || "./", location.href);
@@ -24,7 +24,7 @@ const el = (tag, cls, text) => {
   return node;
 };
 
-const ps1 = () => `${root.dataset.user}@${root.dataset.host}:${display(shell.cwd)}$`;
+const ps1 = () => formatPrompt(root.dataset.ps1, { ...root.dataset, cwd: shell.cwd });
 const siteUrl = (relative) => new URL(relative, BASE).href;
 
 // pushState changes what relative URLs resolve against, so pin them down first.

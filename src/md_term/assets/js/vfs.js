@@ -17,6 +17,12 @@ export function display(path) {
   return path === "/" ? "~" : "~" + path;
 }
 
+// Fills a `ps1` template; keep the placeholders in step with config.py.
+export function formatPrompt(template, { user, host, cwd }) {
+  const values = { user, host, path: display(cwd), dir: cwd === "/" ? "~" : basename(cwd) };
+  return template.replace(/\{(\w*)\}/g, (match, name) => values[name] ?? match);
+}
+
 export function join(dir, name) {
   return dir === "/" ? "/" + name : `${dir}/${name}`;
 }

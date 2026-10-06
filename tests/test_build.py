@@ -269,3 +269,25 @@ def test_vendored_runtime_spec_is_consistent():
     for name in spec["glue"]:
         assert (Path(python_runtime.__file__).parent / "runtimes" / "monty" / name).is_file()
     assert all(len(info["sha256"]) == 64 for info in spec["files"].values())
+
+
+def test_custom_ps1(project: Config):
+    project.ps1 = "[{host}] {dir} λ"
+    assert project.prompt("/") == "[test] ~ λ"
+    assert project.prompt("/guide/deep") == "[test] deep λ"
+    build(project)
+    post = read(project, "blog/first/index.html")
+    assert '<span class="ps1">[test] blog λ</span>' in post
+    assert 'data-ps1="[{host}] {dir} λ"' in post
+    assert Config(root=project.root).prompt("/blog") == "guest@md-term:~/blog$"
+
+
+def test_ps1_rejects_unknown_placeholders(tmp_path: Path):
+    path = tmp_path / "md-term.toml"
+    for text, message in [
+        ('ps1 = "{date} $"', "unknown placeholder '{date}'"),
+        ('ps1 = " "', "must not be empty"),
+    ]:
+        path.write_text(text + "\n")
+        with pytest.raises(MdTermError, match=message):
+            load_config(path)

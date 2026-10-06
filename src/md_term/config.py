@@ -11,6 +11,9 @@ CONFIG_NAME = "md-term.toml"
 THEMES = ("phosphor", "amber", "ice", "mono", "dracula", "paper")
 # Keys accepted in [colors]; each maps to the CSS variable --<key-with-dashes>.
 COLOR_KEYS = ("bg", "bg_raised", "fg", "fg_bright", "fg_dim", "line", "alert", "glow")
+# Placeholders accepted in `ps1`. The browser shell fills the same ones (vfs.js).
+PS1_FIELDS = ("user", "host", "path", "dir")
+PS1_FIELD = re.compile(r"\{(\w*)\}")
 _CSS_VALUE = re.compile(r"[#\w(),.%/\s-]+")
 
 
@@ -29,6 +32,7 @@ class Config:
     site_dir: str = "site"
     user: str = "guest"
     host: str = ""
+    ps1: str = "{user}@{host}:{path}$"
     motd: str = ""
     theme: str = THEMES[0]
     colors: dict[str, str] = field(default_factory=dict)
@@ -43,10 +47,29 @@ class Config:
                 raise MdTermError(f"unknown color '{key}' (choose from: {', '.join(COLOR_KEYS)})")
             if not _CSS_VALUE.fullmatch(value):
                 raise MdTermError(f"color '{key}' is not a valid CSS color: {value!r}")
+        if not self.ps1.strip():
+            raise MdTermError("'ps1' must not be empty")
+        for name in PS1_FIELD.findall(self.ps1):
+            if name not in PS1_FIELDS:
+                fields_ = ", ".join(f"{{{field_}}}" for field_ in PS1_FIELDS)
+                raise MdTermError(
+                    f"unknown placeholder '{{{name}}}' in ps1 (choose from: {fields_})"
+                )
         if not self.host:
             self.host = re.sub(r"[^\w.-]+", "-", self.site_name.lower()).strip("-") or "md-term"
         if self.site_url and not self.site_url.endswith("/"):
             self.site_url += "/"
+
+    def prompt(self, vdir: str) -> str:
+        """The prompt shown in the virtual directory `vdir` ('/' is the home)."""
+        path = "~" if vdir == "/" else "~" + vdir
+        values = {
+            "user": self.user,
+            "host": self.host,
+            "path": path,
+            "dir": "~" if vdir == "/" else vdir.rsplit("/", 1)[-1],
+        }
+        return PS1_FIELD.sub(lambda match: values[match.group(1)], self.ps1)
 
     @property
     def docs_path(self) -> Path:

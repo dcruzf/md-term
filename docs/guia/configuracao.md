@@ -39,6 +39,7 @@ Em TOML, as opções simples precisam vir antes de qualquer tabela como
 | `site_dir`    | `site`      | pasta de saída, apagada a cada build            |
 | `user`        | `guest`     | usuário mostrado no prompt                      |
 | `host`        | do nome     | máquina mostrada no prompt                      |
+| `ps1`         | `{user}@{host}:{path}$` | [formato do prompt](#prompt)        |
 | `motd`        | vazio       | mensagem exibida na página inicial              |
 | `theme`       | `phosphor`  | tema de cores: `phosphor`, `amber`, `ice`, `mono`, `dracula` ou `paper` |
 | `[colors]`    | vazio       | cores que substituem as do tema                 |
@@ -47,6 +48,34 @@ Em TOML, as opções simples precisam vir antes de qualquer tabela como
 
 Uma opção desconhecida ou com o tipo errado interrompe o build com uma
 mensagem dizendo qual é.
+
+## Prompt
+
+A opção `ps1` define o formato do prompt. Ela aceita texto livre e quatro
+marcadores:
+
+| Marcador | Vira                         | Exemplo em `~/guia/avancado` |
+| -------- | ---------------------------- | ---------------------------- |
+| `{user}` | o valor de `user`            | `visitante`                  |
+| `{host}` | o valor de `host`            | `md-term`                    |
+| `{path}` | o caminho completo           | `~/guia/avancado`            |
+| `{dir}`  | só a pasta atual             | `avancado`                   |
+
+Na raiz do site, `{path}` e `{dir}` valem `~`.
+
+| `ps1`                       | Resultado                          |
+| --------------------------- | ---------------------------------- |
+| `"{user}@{host}:{path}$"`   | `visitante@md-term:~/guia$`        |
+| `"{path} >"`                | `~/guia >`                         |
+| `"λ {dir}"`                 | `λ guia`                           |
+| `"[{host}] {path} #"`       | `[md-term] ~/guia #`               |
+| `"C:\\{dir}>"`              | `C:\guia>`                         |
+
+Um marcador desconhecido, como `{data}`, interrompe o build. Em TOML, uma
+barra invertida dentro de aspas duplas precisa ser dobrada; com aspas simples
+(`'C:\{dir}>'`) ela é literal.
+
+Os prompts do REPL de Python (`>>>` e `...`) não são configuráveis.
 
 ## Aparência
 

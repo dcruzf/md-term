@@ -33,10 +33,6 @@ def relurl(target: str, from_dir: str) -> str:
     return rel
 
 
-def display_path(vdir: str) -> str:
-    return "~" if vdir == "/" else "~" + vdir
-
-
 def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> Site:
     site = load_site(config, drafts=drafts)
     out = config.site_path
@@ -83,7 +79,7 @@ def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> 
             title=page.title,
             description=page.excerpt,
             cwd=page.vdir,
-            ps1=_ps1(config, page.vdir),
+            ps1=config.prompt(page.vdir),
             command=f"cat {page.name}",
             tags=[site.tags[slug] for slug in site.tags if page in site.tags[slug].pages],
             motd=config.motd if page.url == "" else "",
@@ -101,7 +97,7 @@ def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> 
             title=posixpath.basename(directory) or config.site_name,
             description=config.description,
             cwd=vdir,
-            ps1=_ps1(config, vdir),
+            ps1=config.prompt(vdir),
             command="ls",
             entries=_dir_entries(site, directory),
             motd=config.motd if url == "" else "",
@@ -113,7 +109,7 @@ def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> 
         title="tags",
         description="",
         cwd="/",
-        ps1=_ps1(config, "/"),
+        ps1=config.prompt("/"),
         command="tags",
         entries=[
             {
@@ -134,7 +130,7 @@ def build(config: Config, *, drafts: bool = False, livereload: bool = False) -> 
             title=f"#{tag.name}",
             description="",
             cwd="/",
-            ps1=_ps1(config, "/"),
+            ps1=config.prompt("/"),
             command=f"tag {_quote(tag.name)}",
             entries=[_file_entry(p, label=p.vpath) for p in _by_date(tag.pages)],
             motd="",
@@ -185,10 +181,6 @@ def _copy_assets(target: Path) -> None:
     source = resources.files("md_term") / "assets"
     with resources.as_file(source) as path:
         shutil.copytree(path, target, dirs_exist_ok=True)
-
-
-def _ps1(config: Config, vdir: str) -> str:
-    return f"{config.user}@{config.host}:{display_path(vdir)}$"
 
 
 def _quote(arg: str) -> str:

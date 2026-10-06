@@ -15,6 +15,8 @@ lang = "en"
 # Shown in the prompt as user@host.
 user = "guest"
 host = "my-site"
+# Prompt format. Placeholders: {user}, {host}, {path} (~/blog) and {dir} (blog).
+# ps1 = "{user}@{host}:{path}$"
 
 # Greeting printed on the home page.
 motd = "Welcome. Type 'help' or click a command above."
