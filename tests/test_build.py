@@ -477,3 +477,56 @@ def test_home_page_can_set_the_icon(project: Config):
     (project.docs_path / "index.md").write_text("---\nsite_icon: 🌱\n---\nBody\n")
     build(project)
     assert "🌱" in unquote(icon_tag(project, "guide/setup/index.html"))
+
+
+def test_nav_options_in_config(project: Config):
+    project.nav = ["help", "ls", "theme"]
+    build(project)
+    html = read(project, "index.html")
+    assert '<a class="js-only" href="./" data-cmd="help">help</a>' in html
+    assert '<a href="./" data-cmd="ls">ls</a>' in html
+    assert '<a class="js-only" href="./" data-cmd="theme">theme</a>' in html
+    assert 'data-cmd="tree"' not in html
+    assert 'data-cmd="posts"' not in html
+
+
+def test_nav_can_be_disabled(project: Config):
+    project.nav = []
+    build(project)
+    assert '<nav class="cmdbar"' not in read(project, "index.html")
+
+
+def test_home_page_site_nav_overrides_config(project: Config):
+    project.nav = ["help", "ls", "tree", "tags"]
+    (project.docs_path / "index.md").write_text("---\nsite_nav: [help, clear]\n---\nBody\n")
+    build(project)
+    html = read(project, "index.html")
+    assert '<a class="js-only" href="./" data-cmd="help">help</a>' in html
+    assert '<a class="js-only" href="./" data-cmd="clear">clear</a>' in html
+    assert 'data-cmd="ls"' not in html
+    assert 'data-cmd="tree"' not in html
+
+
+def test_home_page_site_nav_supports_string_and_false(project: Config):
+    (project.docs_path / "index.md").write_text("---\nsite_nav: 'help, ls, tags'\n---\nBody\n")
+    build(project)
+    html = read(project, "index.html")
+    assert 'data-cmd="help"' in html and 'data-cmd="ls"' in html and 'data-cmd="tags"' in html
+    assert 'data-cmd="tree"' not in html
+
+    (project.docs_path / "index.md").write_text("---\nsite_nav: false\n---\nBody\n")
+    build(project)
+    assert '<nav class="cmdbar"' not in read(project, "index.html")
+
+
+def test_nav_validation(project: Config):
+    for front_matter, message in [
+        ("site_nav: [help, invalid]", "index.md: unknown command 'invalid' in nav"),
+        ("site_nav: 123", "index.md: 'site_nav' must be a list of commands, text or false"),
+    ]:
+        (project.docs_path / "index.md").write_text(f"---\n{front_matter}\n---\nBody\n")
+        with pytest.raises(MdTermError, match=message):
+            build(project)
+
+    with pytest.raises(MdTermError, match="unknown command 'nope' in nav"):
+        Config(root=project.root, nav=["nope"])
