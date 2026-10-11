@@ -40,21 +40,37 @@ try {
     <span class="tagline">{{ config.description }}</span>
     {% endif %}
   </header>
+  {% if config.nav %}
   <nav class="cmdbar" aria-label="Commands">
+    {% for item in config.nav %}
+    {% if item == "help" %}
     <a class="js-only" href="{{ base }}" data-cmd="help">help</a>
+    {% elif item == "ls" %}
     <a href="{{ href(cwd[1:] + '/' if cwd != '/' else '') }}" data-cmd="ls">ls</a>
+    {% elif item == "tree" %}
     <a class="js-only" href="{{ base }}" data-cmd="tree">tree</a>
+    {% elif item == "posts" %}
     <a class="js-only" href="{{ base }}" data-cmd="posts">posts</a>
+    {% elif item == "tags" %}
     <a href="{{ base }}tags/" data-cmd="tags">tags</a>
+    {% elif item == "python" %}
     {% if config.python %}
     <a class="js-only" href="{{ base }}" data-cmd="python">python</a>
     {% endif %}
+    {% elif item == "theme" %}
     <a class="js-only" href="{{ base }}" data-cmd="theme">theme</a>
+    {% elif item == "clear" %}
     <a class="js-only" href="{{ base }}" data-cmd="clear">clear</a>
+    {% elif item == "rss" %}
     {% if has_feed %}
     <a class="feed" href="{{ base }}feed.xml">rss</a>
     {% endif %}
+    {% else %}
+    <a class="js-only" href="{{ base }}" data-cmd="{{ item }}">{{ item }}</a>
+    {% endif %}
+    {% endfor %}
   </nav>
+  {% endif %}
   <main class="screen">
     <div id="scrollback">
       {% if motd %}

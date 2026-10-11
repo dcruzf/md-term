@@ -26,7 +26,28 @@ PAGE_SETTINGS = {
     "site_motd": "motd",
     "site_theme": "theme",
     "site_icon": "icon",
+    "site_nav": "nav",
 }
+DEFAULT_NAV = ("help", "ls", "tree", "posts", "tags", "python", "theme", "clear", "rss")
+NAV_COMMANDS = (
+    "help",
+    "ls",
+    "tree",
+    "posts",
+    "tags",
+    "python",
+    "theme",
+    "clear",
+    "rss",
+    "history",
+    "exit",
+    "edit",
+    "search",
+    "grep",
+    "cat",
+    "cd",
+    "pwd",
+)
 PYTHON_RUNTIMES = ("monty", "pyodide")
 # A package name with an optional version specifier, as micropip accepts.
 _REQUIREMENT = re.compile(r"[A-Za-z0-9][\w.\-\[\],]*([=<>!~]=?[\w.*,=<>!~]+)?")
@@ -51,6 +72,7 @@ class Config:
     ps1: str = "{user}@{host}:{path}$"
     motd: str = ""
     icon: str = ""  # favicon: a file in docs, a URL, `set:name` (Iconify), an emoji or short text
+    nav: list[str] = field(default_factory=lambda: list(DEFAULT_NAV))
     theme: str = THEMES[0]
     colors: dict[str, str] = field(default_factory=dict)
     extra_css: list[str] = field(default_factory=list)
@@ -65,6 +87,27 @@ class Config:
                 raise MdTermError(f"unknown color '{key}' (choose from: {', '.join(COLOR_KEYS)})")
             if not _CSS_VALUE.fullmatch(value):
                 raise MdTermError(f"color '{key}' is not a valid CSS color: {value!r}")
+        if self.nav is False:
+            self.nav = []
+        elif self.nav is True:
+            self.nav = list(DEFAULT_NAV)
+        elif isinstance(self.nav, tuple):
+            self.nav = list(self.nav)
+        elif isinstance(self.nav, str):
+            if self.nav.lower() in ("none", "off", "false", "no"):
+                self.nav = []
+            else:
+                self.nav = [
+                    item.strip() for item in self.nav.replace(",", " ").split() if item.strip()
+                ]
+        elif not isinstance(self.nav, list):
+            raise MdTermError("'nav' must be a list of commands, text or false")
+        for item in self.nav:
+            if not isinstance(item, str):
+                raise MdTermError(f"entry in 'nav' must be text, got {item!r}")
+            if item not in NAV_COMMANDS:
+                commands = ", ".join(NAV_COMMANDS)
+                raise MdTermError(f"unknown command '{item}' in nav (choose from: {commands})")
         if self.python is True:
             self.python = "monty"
         elif self.python is False:
@@ -96,6 +139,27 @@ class Config:
         for key, option in PAGE_SETTINGS.items():
             value = meta.get(key)
             if value is None or value == "":
+                continue
+            if key == "site_nav":
+                if value is False:
+                    changes[option] = []
+                elif value is True:
+                    changes[option] = list(DEFAULT_NAV)
+                elif isinstance(value, list):
+                    if not all(isinstance(x, str) for x in value):
+                        raise MdTermError(f"{src}: 'site_nav' entries must be text")
+                    changes[option] = list(value)
+                elif isinstance(value, str):
+                    if value.lower() in ("none", "off", "false", "no"):
+                        changes[option] = []
+                    else:
+                        changes[option] = [
+                            item.strip() for item in value.replace(",", " ").split() if item.strip()
+                        ]
+                else:
+                    raise MdTermError(
+                        f"{src}: 'site_nav' must be a list of commands, text or false"
+                    )
                 continue
             if not isinstance(value, str):
                 raise MdTermError(f"{src}: '{key}' must be text")

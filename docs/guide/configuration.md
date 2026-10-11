@@ -42,6 +42,7 @@ alert = "#ff3b3b"
 | `ps1`             | `{user}@{host}:{path}$`  | [prompt format](#prompt)                        |
 | `motd`            | empty                    | message printed on the home page                |
 | `icon`            | a `>_` tile              | the [favicon](#icon)                            |
+| `nav`             | built-in commands        | commands in the top bar; `false` hides the bar  |
 | `theme`           | `phosphor`               | [color theme](themes.md): `phosphor`, `amber`, `ice`, `mono`, `dracula` or `paper` |
 | `[colors]`        | empty                    | colors that replace the theme's                 |
 | `extra_css`       | empty                    | style sheets from `docs/`, loaded after the default one |
@@ -65,6 +66,7 @@ title: Home
 site_name: Field Notes
 site_description: thinking out loud
 site_theme: amber
+site_nav: [help, ls, tree, tags]
 ---
 ```
 
@@ -79,13 +81,14 @@ site_theme: amber
 | `site_motd`        | `motd`        |
 | `site_theme`       | `theme`       |
 | `site_icon`        | `icon`        |
+| `site_nav`         | `nav`         |
 
 A property that is present wins over `md-term.toml`; one that is missing or
 empty leaves the file's value alone. The values are checked like the file's:
 an unknown theme, for example, stops the build with a message naming
 `index.md`.
 
-Only these nine can be set this way, and only on the root `index.md`; the
+Only these ten can be set this way, and only on the root `index.md`; the
 same properties on any other page are ignored. Paths, `site_url`, colors,
 extra CSS and Python stay in `md-term.toml`.
 
