@@ -8,7 +8,29 @@ from pathlib import Path
 CONFIG_NAME = "md-term.toml"
 
 # Presets defined in assets/term.css; the first one is the default.
-THEMES = ("phosphor", "amber", "ice", "mono", "dracula", "paper")
+THEMES = (
+    "phosphor",
+    "amber",
+    "ice",
+    "mono",
+    "dracula",
+    "dracula-dark",
+    "github-dark",
+    "github-light",
+    "matrix",
+    "nord",
+    "tokyo-night",
+    "catppuccin",
+    "gruvbox",
+    "solarized-dark",
+    "paper",
+)
+THEME_ALIASES = {
+    "github": "github-dark",
+    "solarized": "solarized-dark",
+    "gruvbox-dark": "gruvbox",
+    "catppuccin-mocha": "catppuccin",
+}
 # Keys accepted in [colors]; each maps to the CSS variable --<key-with-dashes>.
 COLOR_KEYS = ("bg", "bg_raised", "fg", "fg_bright", "fg_dim", "line", "alert", "glow")
 # Placeholders accepted in `ps1`. The browser shell fills the same ones (vfs.js).
@@ -80,6 +102,8 @@ class Config:
     python_packages: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        if self.theme in THEME_ALIASES:
+            self.theme = THEME_ALIASES[self.theme]
         if self.theme not in THEMES:
             raise MdTermError(f"unknown theme '{self.theme}' (choose from: {', '.join(THEMES)})")
         for key, value in self.colors.items():
@@ -163,6 +187,8 @@ class Config:
                 continue
             if not isinstance(value, str):
                 raise MdTermError(f"{src}: '{key}' must be text")
+            if option == "theme" and value in THEME_ALIASES:
+                value = THEME_ALIASES[value]
             changes[option] = value
         if not changes:
             return self

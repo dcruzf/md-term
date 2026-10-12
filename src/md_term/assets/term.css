@@ -69,6 +69,104 @@
   --alert: #ff79c6;
 }
 
+:root[data-theme="dracula-dark"] {
+  --bg: #0d0b12;
+  --bg-raised: #181524;
+  --fg: #f8f8f2;
+  --fg-bright: #bd93f9;
+  --fg-dim: #7a7299;
+  --line: #352d4a;
+  --alert: #ff79c6;
+}
+
+:root[data-theme="github-dark"],
+:root[data-theme="github"] {
+  --bg: #0d1117;
+  --bg-raised: #161b22;
+  --fg: #e6edf3;
+  --fg-bright: #58a6ff;
+  --fg-dim: #8b949e;
+  --line: #30363d;
+  --alert: #ff7b72;
+}
+
+:root[data-theme="github-light"] {
+  --bg: #ffffff;
+  --bg-raised: #f6f8fa;
+  --fg: #1f2328;
+  --fg-bright: #0969da;
+  --fg-dim: #656d76;
+  --line: #d0d7de;
+  --alert: #cf222e;
+  --glow: transparent;
+  --scanline: rgba(0, 0, 0, 0.04);
+  --vignette: rgba(0, 0, 0, 0.08);
+  color-scheme: light;
+}
+
+:root[data-theme="matrix"] {
+  --bg: #000000;
+  --bg-raised: #001a00;
+  --fg: #00c853;
+  --fg-bright: #69ff97;
+  --fg-dim: #007a33;
+  --line: #003d1a;
+  --alert: #ffffff;
+}
+
+:root[data-theme="nord"] {
+  --bg: #2e3440;
+  --bg-raised: #3b4252;
+  --fg: #eceff4;
+  --fg-bright: #88c0d0;
+  --fg-dim: #81a1c1;
+  --line: #434c5e;
+  --alert: #bf616a;
+}
+
+:root[data-theme="tokyo-night"] {
+  --bg: #1a1b26;
+  --bg-raised: #24283b;
+  --fg: #c0caf5;
+  --fg-bright: #7aa2f7;
+  --fg-dim: #565f89;
+  --line: #383e5a;
+  --alert: #f7768e;
+}
+
+:root[data-theme="catppuccin"],
+:root[data-theme="catppuccin-mocha"] {
+  --bg: #1e1e2e;
+  --bg-raised: #252538;
+  --fg: #cdd6f4;
+  --fg-bright: #cba6f7;
+  --fg-dim: #7f849c;
+  --line: #313244;
+  --alert: #f38ba8;
+}
+
+:root[data-theme="gruvbox"],
+:root[data-theme="gruvbox-dark"] {
+  --bg: #282828;
+  --bg-raised: #3c3836;
+  --fg: #ebdbb2;
+  --fg-bright: #fabd2f;
+  --fg-dim: #928374;
+  --line: #504945;
+  --alert: #fb4934;
+}
+
+:root[data-theme="solarized-dark"],
+:root[data-theme="solarized"] {
+  --bg: #002b36;
+  --bg-raised: #073642;
+  --fg: #93a1a1;
+  --fg-bright: #268bd2;
+  --fg-dim: #586e75;
+  --line: #0e4453;
+  --alert: #cb4b16;
+}
+
 :root[data-theme="paper"] {
   --bg: #f4f1e8;
   --bg-raised: #e9e5d8;
