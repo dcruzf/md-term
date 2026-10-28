@@ -367,11 +367,16 @@ async function whileBusy(task) {
   }
 }
 
-function run(line, { push = true, target = null, python: code = null, draft } = {}) {
-  return whileBusy(() => execute(line, { push, target, code, draft }));
+function run(line, { push = true, target = null, python: code = null, draft, fresh = false } = {}) {
+  return whileBusy(() => execute(line, { push, target, code, draft, fresh }));
 }
 
-async function execute(line, { push, target, code, draft }) {
+// A `fresh` command starts on a cleared screen, as if `clear` had run first.
+async function execute(line, { push, target, code, draft, fresh }) {
+  if (fresh) {
+    scrollback.replaceChildren();
+    scrollTo(0, 0);
+  }
   const entry = newEntry(line);
   let result;
   if (code !== null) {
@@ -421,9 +426,11 @@ async function execute(line, { push, target, code, draft }) {
   else if (result.python) await runPython(result.python.code, entry, result.python);
 }
 
+// Clicking into a folder starts on a clean screen; typed commands only clear
+// with `clear`, as in a real terminal.
 async function openPath(path) {
   if (shell.nodes[path]?.type === "dir") {
-    await run(`cd ${quote(display(path))}`);
+    await run(`cd ${quote(display(path))}`, { fresh: true });
     await run("ls");
   } else {
     await run(`cat ${quote(display(path))}`);
