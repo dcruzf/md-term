@@ -7,7 +7,9 @@ description: Reference of the commands available to visitors.
 
 The prompt sits right after the last output, as in a real terminal. Start
 typing anywhere on the page to return to it. Everything a command lists is
-clickable too, so the site can be browsed without typing at all.
+clickable too, so the site can be browsed without typing at all. Clicking a
+folder clears the screen before listing it; typed commands keep piling up
+until `clear`, as in a real terminal.
 
 | Command                        | What it does                                   |
 | ------------------------------ | ---------------------------------------------- |
