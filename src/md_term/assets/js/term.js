@@ -426,14 +426,14 @@ async function execute(line, { push, target, code, draft, fresh }) {
   else if (result.python) await runPython(result.python.code, entry, result.python);
 }
 
-// Clicking into a folder starts on a clean screen; typed commands only clear
-// with `clear`, as in a real terminal.
-async function openPath(path) {
+// Clicks navigate, so each one starts on a clean screen instead of piling
+// pages up; typed commands only clear with `clear`, as in a real terminal.
+async function openPath(path, { target = null } = {}) {
   if (shell.nodes[path]?.type === "dir") {
     await run(`cd ${quote(display(path))}`, { fresh: true });
     await run("ls");
   } else {
-    await run(`cat ${quote(display(path))}`);
+    await run(`cat ${quote(display(path))}`, { target, fresh: true });
   }
 }
 
@@ -605,7 +605,7 @@ document.addEventListener("click", (event) => {
   }
   if (anchor.dataset.cmd) {
     event.preventDefault();
-    run(anchor.dataset.cmd);
+    run(anchor.dataset.cmd, { fresh: true });
     return;
   }
   if (anchor.dataset.path && shell.nodes[anchor.dataset.path]) {
@@ -629,13 +629,13 @@ document.addEventListener("click", (event) => {
   const path = pathForUrl(url);
   if (!path) return; // static file, tag page, external link: let the browser handle it
   event.preventDefault();
-  if (shell.nodes[path].type === "dir") openPath(path);
-  else run(`cat ${quote(display(path))}`, { target });
+  openPath(path, { target });
 });
 
+// Back and forward show the page alone, like the click that led to it.
 window.addEventListener("popstate", (event) => {
   const path = event.state?.path;
-  if (path && shell.nodes[path]) run(`cat ${quote(display(path))}`, { push: false });
+  if (path && shell.nodes[path]) run(`cat ${quote(display(path))}`, { push: false, fresh: true });
   else if (!location.hash) location.reload();
 });
 
