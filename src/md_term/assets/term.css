@@ -284,6 +284,29 @@ a:focus-visible {
   color: var(--fg-dim);
 }
 
+/* The author's picture, round like GitHub's, at the far end of the title bar. */
+.avatar {
+  margin-left: auto;
+  align-self: center;
+  line-height: 0;
+  border-radius: 50%;
+}
+
+.avatar img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+a.avatar:hover img,
+a.avatar:focus-visible img {
+  border-color: var(--fg-bright);
+  box-shadow: 0 0 10px var(--glow);
+}
+
 .cmdbar {
   display: flex;
   flex-wrap: wrap;

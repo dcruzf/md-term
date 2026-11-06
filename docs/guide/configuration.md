@@ -42,6 +42,8 @@ alert = "#ff3b3b"
 | `ps1`             | `{user}@{host}:{path}$`  | [prompt format](#prompt)                        |
 | `motd`            | empty                    | message printed on the home page                |
 | `icon`            | a `>_` tile              | the [favicon](#icon)                            |
+| `github`          | empty                    | GitHub user whose [picture](#picture) shows in the title bar |
+| `avatar`          | GitHub's picture         | another [picture](#picture) for the title bar   |
 | `nav`             | built-in commands        | commands in the top bar; `false` hides the bar  |
 | `theme`           | `phosphor`               | [color theme](themes.md): `phosphor`, `amber`, `ice`, `mono`, `dracula` or `paper` |
 | `[colors]`        | empty                    | colors that replace the theme's                 |
@@ -81,6 +83,8 @@ site_nav: [help, ls, tree, tags]
 | `site_motd`        | `motd`        |
 | `site_theme`       | `theme`       |
 | `site_icon`        | `icon`        |
+| `site_github`      | `github`      |
+| `site_avatar`      | `avatar`      |
 | `site_nav`         | `nav`         |
 
 A property that is present wins over `md-term.toml`; one that is missing or
@@ -88,13 +92,36 @@ empty leaves the file's value alone. The values are checked like the file's:
 an unknown theme, for example, stops the build with a message naming
 `index.md`.
 
-Only these ten can be set this way, and only on the root `index.md`; the
+Only these twelve can be set this way, and only on the root `index.md`; the
 same properties on any other page are ignored. Paths, `site_url`, colors,
 extra CSS and Python stay in `md-term.toml`.
 
 > [!NOTE]
 > `title` and `description` keep their usual meaning: they describe the home
 > *page*. The site's name and tagline are `site_name` and `site_description`.
+
+## Picture
+
+A round picture at the end of the title bar shows who writes the site, on
+every page. Set `github` to a GitHub user name and the site uses that user's
+GitHub picture, linked to their profile:
+
+```toml
+github = "octocat"
+```
+
+To show another image, set `avatar` as well. It takes a file in the docs
+folder (by path or file name, or as an `[[Obsidian link]]`) or a web address;
+with `github` set, the picture still links to the profile. A file that is not
+found makes the build warn and fall back to the GitHub picture, or to no
+picture without `github`.
+
+```toml
+github = "octocat"
+avatar = "assets/me.jpg"
+```
+
+The GitHub picture is fetched by the visitor's browser from `github.com`.
 
 ## Icon
 
