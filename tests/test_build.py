@@ -479,6 +479,67 @@ def test_home_page_can_set_the_icon(project: Config):
     assert "🌱" in unquote(icon_tag(project, "guide/setup/index.html"))
 
 
+def avatar_tag(config: Config, page: str = "index.html") -> str | None:
+    lines = [line.strip() for line in read(config, page).splitlines() if 'class="avatar"' in line]
+    return lines[0] if lines else None
+
+
+def test_no_avatar_by_default(project: Config):
+    build(project)
+    assert avatar_tag(project) is None
+
+
+def test_github_shows_the_github_picture_linked_to_the_profile(project: Config):
+    project.github = "@octocat"  # the @ is optional
+    project.__post_init__()
+    build(project)
+    assert avatar_tag(project, "guide/setup/index.html") == (
+        '<a class="avatar" href="https://github.com/octocat" rel="me" title="@octocat on GitHub">'
+        '<img src="https://github.com/octocat.png?size=96" alt="@octocat on GitHub"'
+        ' width="28" height="28" decoding="async"></a>'
+    )
+
+
+def test_avatar_from_a_file_or_url_replaces_the_github_picture(project: Config, caplog):
+    project.github = "octocat"
+    project.avatar = "pic.png"
+    build(project)
+    assert 'href="https://github.com/octocat"' in avatar_tag(project)
+    assert 'src="blog/pic.png"' in avatar_tag(project)
+    assert 'src="../pic.png"' in avatar_tag(project, "blog/first/index.html")
+
+    project.avatar = "https://example.com/me.jpg"
+    build(project)
+    assert 'src="https://example.com/me.jpg"' in avatar_tag(project)
+
+    project.avatar = "missing.png"
+    build(project)
+    assert 'src="https://github.com/octocat.png?size=96"' in avatar_tag(project)
+    assert "avatar: 'missing.png' not found" in caplog.text
+
+
+def test_avatar_without_github_is_not_a_link(project: Config):
+    project.avatar = "[[blog/pic.png]]"
+    build(project)
+    assert avatar_tag(project).startswith('<span class="avatar"><img src="blog/pic.png" alt="Test"')
+
+
+def test_github_must_be_a_user_name(project: Config):
+    for bad in ("https://github.com/octocat", "two words", "-dash", "a" * 40):
+        with pytest.raises(MdTermError, match="'github' is not a GitHub user name"):
+            Config(root=project.root, github=bad)
+
+
+def test_home_page_can_set_github_and_avatar(project: Config):
+    (project.docs_path / "index.md").write_text("---\nsite_github: octocat\n---\nBody\n")
+    build(project)
+    assert 'href="https://github.com/octocat"' in avatar_tag(project, "guide/setup/index.html")
+
+    (project.docs_path / "index.md").write_text("---\nsite_github: 'not valid'\n---\nBody\n")
+    with pytest.raises(MdTermError, match="index.md: 'github' is not a GitHub user name"):
+        build(project)
+
+
 def test_nav_options_in_config(project: Config):
     project.nav = ["help", "ls", "theme"]
     build(project)
