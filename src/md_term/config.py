@@ -48,6 +48,8 @@ PAGE_SETTINGS = {
     "site_motd": "motd",
     "site_theme": "theme",
     "site_icon": "icon",
+    "site_github": "github",
+    "site_avatar": "avatar",
     "site_nav": "nav",
 }
 DEFAULT_NAV = ("help", "ls", "tree", "posts", "tags", "python", "theme", "clear", "rss")
@@ -74,6 +76,8 @@ PYTHON_RUNTIMES = ("monty", "pyodide")
 # A package name with an optional version specifier, as micropip accepts.
 _REQUIREMENT = re.compile(r"[A-Za-z0-9][\w.\-\[\],]*([=<>!~]=?[\w.*,=<>!~]+)?")
 _CSS_VALUE = re.compile(r"[#\w(),.%/\s-]+")
+# A GitHub user name: letters, digits and single hyphens, at most 39 characters.
+_GITHUB_USER = re.compile(r"[A-Za-z0-9](?:-?[A-Za-z0-9]){0,38}")
 
 
 class MdTermError(Exception):
@@ -94,6 +98,8 @@ class Config:
     ps1: str = "{user}@{host}:{path}$"
     motd: str = ""
     icon: str = ""  # favicon: a file in docs, a URL, `set:name` (Iconify), an emoji or short text
+    github: str = ""  # GitHub user: their picture, linked to the profile, in the title bar
+    avatar: str = ""  # picture for the title bar instead of GitHub's: a file in docs or a URL
     nav: list[str] = field(default_factory=lambda: list(DEFAULT_NAV))
     theme: str = THEMES[0]
     colors: dict[str, str] = field(default_factory=dict)
@@ -152,6 +158,9 @@ class Config:
                 raise MdTermError(
                     f"unknown placeholder '{{{name}}}' in ps1 (choose from: {fields_})"
                 )
+        self.github = self.github.strip().removeprefix("@")
+        if self.github and not _GITHUB_USER.fullmatch(self.github):
+            raise MdTermError(f"'github' is not a GitHub user name: {self.github!r}")
         if not self.host:
             self.host = _host_from(self.site_name)
         if self.site_url and not self.site_url.endswith("/"):

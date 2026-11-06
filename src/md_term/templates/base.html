@@ -39,6 +39,13 @@ try {
     {% if config.description %}
     <span class="tagline">{{ config.description }}</span>
     {% endif %}
+    {% if avatar %}
+    {% if avatar.link %}
+    <a class="avatar" href="{{ avatar.link }}" rel="me" title="{{ avatar.label }}"><img src="{{ avatar.src }}" alt="{{ avatar.label }}" width="28" height="28" decoding="async"></a>
+    {% else %}
+    <span class="avatar"><img src="{{ avatar.src }}" alt="{{ avatar.label }}" width="28" height="28" decoding="async"></span>
+    {% endif %}
+    {% endif %}
   </header>
   {% if config.nav %}
   <nav class="cmdbar" aria-label="Commands">

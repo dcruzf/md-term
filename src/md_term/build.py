@@ -99,12 +99,15 @@ def _write_site(config: Config, site: Site, out: Path, *, livereload: bool) -> N
         log.warning("site_url is not set: skipping feed.xml")
 
     icon = _icon(config, site)
+    avatar = _avatar(config, site)
 
     def write_html(url: str, template: str, **context: object) -> None:
         base = relurl("", url)
         text = env.get_template(template).render(
             config=config,
             icon=icon | {"href": relurl(icon["href"], url) if icon["local"] else icon["href"]},
+            avatar=avatar
+            and avatar | {"src": relurl(avatar["src"], url) if avatar["local"] else avatar["src"]},
             themes=THEMES,
             colors={key.replace("_", "-"): value for key, value in config.colors.items()},
             base=base,
@@ -303,17 +306,49 @@ def _icon(config: Config, site: Site) -> dict:
         href = f"https://api.iconify.design/{collection}/{name}.svg{tint}"
         return {"href": href, "type": "image/svg+xml", "local": False}
     if "/" in value or "." in value:  # a file among the docs, by path or by name alone
-        matches = sorted(
-            (src for src in site.static if src == value or src.endswith("/" + value)),
-            key=lambda src: (src.count("/"), src),
-        )
-        if matches:
-            suffix = posixpath.splitext(matches[0])[1].lower()
-            return {"href": matches[0], "type": ICON_TYPES.get(suffix, ""), "local": True}
+        found = _static_file(value, site)
+        if found:
+            suffix = posixpath.splitext(found)[1].lower()
+            return {"href": found, "type": ICON_TYPES.get(suffix, ""), "local": True}
         log.warning("icon: '%s' not found in %s, using the default icon", value, config.docs_dir)
         value = ""
     href = _text_icon(value or ">_", background, color)
     return {"href": href, "type": "image/svg+xml", "local": False}
+
+
+def _static_file(value: str, site: Site) -> str | None:
+    """A file among the docs, named by path or by file name alone; the one closest
+    to the root wins when two share a name."""
+    matches = sorted(
+        (src for src in site.static if src == value or src.endswith("/" + value)),
+        key=lambda src: (src.count("/"), src),
+    )
+    return matches[0] if matches else None
+
+
+def _avatar(config: Config, site: Site) -> dict | None:
+    """Resolves the title bar picture to {src, local, link, label}, or None.
+
+    `avatar` picks the image; without it, `github` uses the GitHub picture. With
+    `github` set, the picture links to the profile.
+    """
+    link = f"https://github.com/{config.github}" if config.github else ""
+    label = f"@{config.github} on GitHub" if config.github else config.site_name
+    value = config.avatar.strip()
+    if value.startswith("[[") and value.endswith("]]"):  # an Obsidian link to the file
+        value = value[2:-2].split("|")[0].strip()
+    if re.match(r"https?://", value):
+        return {"src": value, "local": False, "link": link, "label": label}
+    if value:
+        found = _static_file(value, site)
+        if found:
+            return {"src": found, "local": True, "link": link, "label": label}
+        log.warning("avatar: '%s' not found in %s", value, config.docs_dir)
+    if config.github:
+        # GitHub serves every user's picture at this address; size is in pixels.
+        src = f"https://github.com/{config.github}.png?size=96"
+        return {"src": src, "local": False, "link": link, "label": label}
+    return None
 
 
 def _wikilink_resolver(page: Page, site: Site):
