@@ -33,6 +33,19 @@ class _Handler(SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
+    def send_error(self, code: int, message: str | None = None, explain: str | None = None) -> None:
+        # Missing pages get the site's own 404 page, as on GitHub Pages or nginx.
+        page = Path(self.directory) / "404.html"
+        if code == 404 and self.command == "GET" and page.is_file():
+            body = page.read_bytes()
+            self.send_response(404)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        super().send_error(code, message, explain)
+
     def end_headers(self) -> None:
         self.send_header("Cache-Control", "no-store")
         super().end_headers()
