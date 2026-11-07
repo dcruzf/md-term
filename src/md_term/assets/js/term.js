@@ -639,6 +639,49 @@ window.addEventListener("popstate", (event) => {
   else if (!location.hash) location.reload();
 });
 
+// Edits needed to turn one text into the other (Levenshtein).
+function distance(a, b) {
+  let row = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= b.length; j++) {
+      next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    row = next;
+  }
+  return row[b.length];
+}
+
+// The 404 page: name the address that was asked for and, when a page is close
+// enough (a typo, or the right name in another folder), offer it.
+function showNotFound() {
+  const box = document.getElementById("not-found");
+  if (!box) return;
+  let asked = location.pathname;
+  if (asked.startsWith(BASE.pathname)) asked = asked.slice(BASE.pathname.length);
+  try {
+    asked = decodeURIComponent(asked);
+  } catch {}
+  asked = "/" + asked.replace(/(\/index)?\.html$/, "").replace(/\/+$/, "");
+  box.querySelector("[data-missing]").textContent = display(asked);
+  const cmd = scrollback.querySelector(".entry .cmd");
+  if (cmd) cmd.textContent = `cat ${quote(display(asked))}`;
+
+  const name = (path) => path.replace(/\.md$/, "");
+  const base = (path) => name(path).split("/").pop();
+  let best = null;
+  let bestScore = Math.max(2, Math.floor(asked.length / 4)) + 1;
+  for (const path of Object.keys(shell.nodes)) {
+    if (path === "/") continue;
+    const score = base(path) === base(asked) ? 0 : distance(asked, name(path));
+    if (score < bestScore) [best, bestScore] = [path, score];
+  }
+  if (!best) return;
+  const suggestion = box.querySelector(".did-you-mean");
+  suggestion.querySelector("a").replaceWith(link({ label: display(best), path: best }));
+  suggestion.hidden = false;
+}
+
 async function start() {
   const fs = await (await fetch(siteUrl("fs.json"))).json();
   for (const [path, node] of Object.entries(fs.nodes)) {
@@ -679,6 +722,7 @@ async function start() {
   renderDiagrams(document);
   const current = document.getElementById("content")?.dataset.path;
   history.replaceState({ path: current ?? null }, "");
+  showNotFound();
 
   root.classList.add("js");
   form.hidden = false;

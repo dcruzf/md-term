@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block output %}
+{# Served for any missing address. term.js fills in the address asked for and,
+   when one exists, the closest page. #}
+<div class="out" id="not-found">
+  <pre class="plain error">cat: <span data-missing>this page</span>: No such file or directory</pre>
+  <p class="did-you-mean" hidden>Did you mean <a href="{{ base }}"></a>?</p>
+  <p class="dim">The page may have moved or never existed. Go back <a href="{{ base }}">home</a>, type
+    <code>ls</code> to see what is here, or <code>search</code> a word.</p>
+</div>
+{% endblock %}

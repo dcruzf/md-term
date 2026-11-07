@@ -101,22 +101,29 @@ def _write_site(config: Config, site: Site, out: Path, *, livereload: bool) -> N
     icon = _icon(config, site)
     avatar = _avatar(config, site)
 
-    def write_html(url: str, template: str, **context: object) -> None:
-        base = relurl("", url)
+    def write_html(url: str, template: str, *, file: str = "", **context: object) -> None:
+        """Renders a page at `url`. With `file`, the page is written there instead
+        and links from the site root, so it works whatever address it is served at."""
+        if file:
+            # `md-term serve` serves the site at the root, whatever site_url says.
+            root = "/" if livereload else urlsplit(config.site_url).path or "/"
+            to = lambda target: root + target
+        else:
+            to = lambda target: relurl(target, url)
         text = env.get_template(template).render(
             config=config,
-            icon=icon | {"href": relurl(icon["href"], url) if icon["local"] else icon["href"]},
+            icon=icon | {"href": to(icon["href"]) if icon["local"] else icon["href"]},
             avatar=avatar
-            and avatar | {"src": relurl(avatar["src"], url) if avatar["local"] else avatar["src"]},
+            and avatar | {"src": to(avatar["src"]) if avatar["local"] else avatar["src"]},
             themes=THEMES,
             colors={key.replace("_", "-"): value for key, value in config.colors.items()},
-            base=base,
+            base=to(""),
             has_feed=has_feed,
             livereload=livereload,
-            href=lambda target: relurl(target, url),
+            href=to,
             **context,
         )
-        _write(out / url / "index.html", text)
+        _write(out / (file or url + "index.html"), text)
 
     for page in site.pages:
         write_html(
@@ -182,6 +189,20 @@ def _write_site(config: Config, site: Site, out: Path, *, livereload: bool) -> N
             entries=[_file_entry(p, label=p.vpath) for p in _by_date(tag.pages)],
             motd="",
         )
+
+    # Served for any missing address: GitHub Pages picks it up by name, other
+    # servers need to point their 404 at it (nginx: `error_page 404 /404.html`).
+    write_html(
+        "",
+        "404.html",
+        file="404.html",
+        title="not found",
+        description="",
+        cwd="/",
+        ps1=config.prompt("/"),
+        command="cat missing-page",
+        motd="",
+    )
 
     _write(out / "fs.json", json.dumps(_fs(site), ensure_ascii=False, separators=(",", ":")))
     _write(

@@ -540,6 +540,30 @@ def test_home_page_can_set_github_and_avatar(project: Config):
         build(project)
 
 
+def test_404_page_links_from_the_site_root(project: Config):
+    # site_url is https://example.com/sub: the page may be served at any depth.
+    project.icon = "pic.png"
+    build(project)
+    html = read(project, "404.html")
+    assert '<div class="out" id="not-found">' in html
+    assert 'data-base="/sub/"' in html
+    assert 'href="/sub/assets/term.css"' in html
+    assert 'src="/sub/assets/js/term.js"' in html
+    assert 'rel="icon" href="/sub/blog/pic.png"' in html
+    assert "<title>not found — Test</title>" in html
+    assert not (project.site_path / "404" / "index.html").exists()
+
+
+def test_404_page_without_site_url_or_when_serving_uses_the_root(project: Config):
+    project.site_url = ""
+    build(project)
+    assert 'data-base="/"' in read(project, "404.html")
+
+    project.site_url = "https://example.com/sub/"
+    build(project, livereload=True)  # `md-term serve` serves the site at /
+    assert 'href="/assets/term.css"' in read(project, "404.html")
+
+
 def test_nav_options_in_config(project: Config):
     project.nav = ["help", "ls", "theme"]
     build(project)
