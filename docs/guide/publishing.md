@@ -91,6 +91,21 @@ rsync -av --delete site/ user@server:/var/www/my-site/
 The server must answer with `index.html` when an address ends in `/`, which
 is the default behavior of practically all of them.
 
+## Page not found
+
+The build also writes `404.html`, a page in the site's style for addresses
+that do not exist. It names the address that was asked for and, when a page
+has a close name (a typo, or the right name in another folder), offers it.
+Its links start from the path of `site_url`, so it works whatever address it
+is served at.
+
+GitHub Pages, Netlify and Cloudflare Pages use it by themselves, and so does
+`md-term serve`. Other servers need to be told; with nginx:
+
+```nginx
+error_page 404 /404.html;
+```
+
 ## Publishing continuously
 
 Instead of building and uploading, the site can follow a folder: whenever a
