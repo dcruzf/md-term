@@ -32,6 +32,9 @@ WikilinkResolver = Callable[[str], str | None]
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".avif", ".bmp"}
 CALLOUT = re.compile(r"\[!(\w+)\]([+-]?)[ \t]*(.*)")
+# Words after a code block's language that keep it from getting [run]:
+# ```python norun
+NO_RUN = {"norun", "no-run"}
 
 
 def _highlight(code: str, lang: str, attrs: str) -> str:
@@ -45,6 +48,13 @@ def _highlight(code: str, lang: str, attrs: str) -> str:
         lexer = TextLexer()
     # nowrap: markdown-it adds the surrounding <pre><code class="language-x">.
     return highlight(code, lexer, HtmlFormatter(nowrap=True))
+
+
+def _no_run(state: StateCore) -> None:
+    """Marks the code blocks whose info string says `norun`: no [run] for them."""
+    for token in state.tokens:
+        if token.type == "fence" and NO_RUN & set(token.info.split()[1:]):
+            token.attrSet("data-norun", "")
 
 
 def _rewrite_links(state: StateCore) -> None:
@@ -168,6 +178,7 @@ def make_renderer() -> MarkdownIt:
     md.inline.ruler.before("link", "wikilink", _wikilink)
     md.add_render_rule("wikilink", _render_wikilink)
     md.core.ruler.push("md_term_links", _rewrite_links)
+    md.core.ruler.push("md_term_no_run", _no_run)
     return md
 
 

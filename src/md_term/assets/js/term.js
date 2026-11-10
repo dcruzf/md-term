@@ -340,7 +340,9 @@ function decorate(scope) {
       link.title = title;
       actions.append(link);
     };
-    if (pythonBase && code.matches(".language-python, .language-py")) {
+    // `norun` on the block, or `python: false` on the page, leaves only [copy].
+    const runnable = !code.closest("[data-norun]");
+    if (pythonBase && runnable && code.matches(".language-python, .language-py")) {
       action("run", "Run this block in your browser");
       action("edit", "Open this block in the editor");
     }
