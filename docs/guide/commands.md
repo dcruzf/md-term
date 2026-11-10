@@ -10,8 +10,9 @@ typing anywhere on the page to return to it. Everything a command lists is
 clickable too, so the site can be browsed without typing at all. A click
 navigates: following a link, a listed file or folder, a command in the bar, or
 the browser's back and forward buttons clears the screen before showing the
-result. Typed commands keep piling up until `clear`, as in a real terminal.
-The code block actions (`[run]`, `[edit]`, `[copy]`) stay on the page they
+result, read from the top of the screen; the prompt waits at the end and
+comes into view as soon as you type. Typed commands keep piling up until
+`clear`, as in a real terminal. The code block actions (`[run]`, `[edit]`, `[copy]`) stay on the page they
 belong to.
 
 | Command                        | What it does                                   |

@@ -166,10 +166,15 @@ async function print(lines) {
   }
 }
 
-// Short output keeps the prompt in view; a long page is read from its top.
-function reveal(entry, anchor) {
+// Typed: short output keeps the prompt in view; a long page is read from its
+// top. Clicked: the screen stays where it is (the top, after a clear) unless
+// the output starts out of sight; the prompt only comes into view on typing.
+function reveal(entry, anchor, typed) {
+  const top = entry.getBoundingClientRect().top;
   if (anchor) anchor.scrollIntoView({ block: "start" });
-  else if (form.getBoundingClientRect().bottom - entry.getBoundingClientRect().top <= innerHeight) {
+  else if (!typed) {
+    if (top < 0 || top >= innerHeight) entry.scrollIntoView({ block: "start" });
+  } else if (form.getBoundingClientRect().bottom - top <= innerHeight) {
     form.scrollIntoView({ block: "nearest" });
   } else entry.scrollIntoView({ block: "start" });
 }
@@ -360,28 +365,28 @@ function updatePrompt() {
   form.classList.toggle("repl", Boolean(repl));
 }
 
-// Hides the prompt while `task` prints, then hands the focus back to it.
-async function whileBusy(task) {
-  // Commands started from a link leave the focus on that link; hand it back to
-  // the prompt. On touch screens only keep it, so a tap never opens the keyboard.
-  const keepFocus = document.activeElement === input || finePointer.matches;
+// Hides the prompt while `task` prints. A typed command hands the focus back to
+// the prompt; a click leaves it alone, and typing anywhere brings it back.
+async function whileBusy(task, { typed = false } = {}) {
   form.classList.add("busy");
   try {
     await task();
   } finally {
     form.classList.remove("busy");
     updatePrompt();
-    if (keepFocus) input.focus({ preventScroll: true });
-    form.scrollIntoView({ block: "nearest" });
+    if (typed) input.focus({ preventScroll: true });
   }
 }
 
-function run(line, { push = true, target = null, python: code = null, draft, fresh = false } = {}) {
-  return whileBusy(() => execute(line, { push, target, code, draft, fresh }));
+function run(
+  line,
+  { push = true, target = null, python: code = null, draft, fresh = false, typed = false } = {},
+) {
+  return whileBusy(() => execute(line, { push, target, code, draft, fresh, typed }), { typed });
 }
 
 // A `fresh` command starts on a cleared screen, as if `clear` had run first.
-async function execute(line, { push, target, code, draft, fresh }) {
+async function execute(line, { push, target, code, draft, fresh, typed }) {
   if (fresh) {
     scrollback.replaceChildren();
     scrollTo(0, 0);
@@ -432,9 +437,12 @@ async function execute(line, { push, target, code, draft, fresh }) {
   if (result.open) await openFile(result.open, entry, { push });
   const lines = reducedMotion.matches ? [] : printable(entry);
   for (const node of lines) node.classList.add("printing"); // hidden but laid out, so the scroll is final
-  reveal(entry, target && entry.querySelector(`[id="${CSS.escape(target)}"]`));
+  reveal(entry, target && entry.querySelector(`[id="${CSS.escape(target)}"]`), typed);
   await print(lines);
-  if (result.edit) await editFile(result.edit, entry, draft);
+  if (result.edit) {
+    await editFile(result.edit, entry, draft);
+    form.scrollIntoView({ block: "nearest" });
+  }
   else if (result.python?.repl) await startRepl(entry);
   else if (result.python) await runPython(result.python.code, entry, result.python);
 }
@@ -484,8 +492,8 @@ form.addEventListener("submit", (event) => {
   const line = input.value;
   input.value = "";
   draft = "";
-  if (repl) whileBusy(() => replSubmit(line));
-  else run(line);
+  if (repl) whileBusy(() => replSubmit(line), { typed: true });
+  else run(line, { typed: true });
 });
 
 // The terminal's keys. Called for real key presses and for the on-screen keys
@@ -511,7 +519,7 @@ function handleKey(key, ctrl) {
     if (repl) {
       scrollback.replaceChildren();
       scrollTo(0, 0);
-    } else run("clear");
+    } else run("clear", { typed: true });
   } else if (ctrl && key === "d" && repl && input.value === "") {
     newEntry("^D", replPrompt(), "entry repl");
     leaveRepl();
