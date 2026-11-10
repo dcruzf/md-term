@@ -204,7 +204,10 @@ def _write_site(config: Config, site: Site, out: Path, *, livereload: bool) -> N
         motd="",
     )
 
-    _write(out / "fs.json", json.dumps(_fs(site), ensure_ascii=False, separators=(",", ":")))
+    _write(
+        out / "fs.json",
+        json.dumps({**_fs(site), "links": config.links}, ensure_ascii=False, separators=(",", ":")),
+    )
     _write(
         out / "search.json", json.dumps(_search(site), ensure_ascii=False, separators=(",", ":"))
     )

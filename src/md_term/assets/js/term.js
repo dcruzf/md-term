@@ -91,6 +91,15 @@ const RENDER = {
     }
     return list;
   },
+  link(block) {
+    const pre = el("pre", "plain", "opening ");
+    const anchor = el("a", "file", block.url);
+    anchor.href = siteUrl(block.url);
+    anchor.target = "_blank";
+    anchor.rel = "noopener";
+    pre.append(anchor);
+    return pre;
+  },
   help(block) {
     const table = el("dl", "help");
     for (const row of block.rows) table.append(el("dt", "", row.usage), el("dd", "", row.summary));
@@ -378,6 +387,10 @@ async function execute(line, { push, target, code, draft, fresh }) {
     scrollTo(0, 0);
   }
   const entry = newEntry(line);
+  // Opened before anything is awaited: later, browsers block the new tab. The
+  // printed link is the way through when they block it anyway.
+  const url = code === null ? shell.link(line) : null;
+  if (url) window.open(siteUrl(url), "_blank", "noopener");
   let result;
   if (code !== null) {
     result = { out: [], python: { code } }; // a [run] link: nothing for the shell to parse
@@ -712,6 +725,7 @@ async function start() {
         } catch {}
       },
     },
+    links: fs.links ?? {},
     loadSearch: () => (search ??= fetch(siteUrl("search.json")).then((r) => r.json())),
   });
   shell.history = loadHistory();

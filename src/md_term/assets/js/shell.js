@@ -408,6 +408,7 @@ export function createShell({
   theme = themes[0],
   python = false,
   scratch = false,
+  links = {}, // hidden commands that open a URL: {name: url}
   storage = null, // { read() → {name: content}, write({name: content}) }; null keeps files in memory
   loadSearch = async () => [],
 }) {
@@ -522,10 +523,20 @@ export function createShell({
       return { label, path, kind: "file", meta };
     },
 
+    // The URL `line` opens, if it names one of the site's links. Synchronous, so
+    // the page can open it while the keypress still allows a new tab.
+    link(line) {
+      const [name] = tokenize(line);
+      if (!name || COMMANDS[ALIASES[name] ?? name] || !Object.hasOwn(links, name)) return null;
+      return links[name];
+    },
+
     async run(line) {
       const [name, ...args] = tokenize(line);
       if (!name) return { out: [] };
       shell.history.push(line.trim());
+      const url = shell.link(line);
+      if (url) return { out: [{ type: "link", url }] };
       const command = COMMANDS[ALIASES[name] ?? name];
       if (!command) {
         return { out: [error(`${name}: command not found (try 'help')`)] };
@@ -582,4 +593,4 @@ export function createShell({
   return shell;
 }
 
-export { COMMANDS };
+export { ALIASES, COMMANDS };

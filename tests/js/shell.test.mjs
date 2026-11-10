@@ -223,3 +223,18 @@ test("exit asks for a restart, and scratch commands need the feature", async () 
   const usages = (await make().run("help")).out[0].rows.map((row) => row.usage);
   assert.ok(usages.includes("exit") && !usages.some((usage) => usage.startsWith("edit")));
 });
+
+test("links are hidden commands that open their URL", async () => {
+  const links = { github: "https://github.com/someone", cv: "files/cv.pdf", ls: "https://x.test/" };
+  const shell = createShell({ nodes, tags, links });
+  assert.equal(shell.link("github"), "https://github.com/someone");
+  assert.equal(shell.link("  cv extra"), "files/cv.pdf");
+  assert.equal(shell.link("ls"), null); // a built-in always wins
+  assert.equal(shell.link("toString"), null);
+  assert.deepEqual((await shell.run("github")).out, [{ type: "link", url: "https://github.com/someone" }]);
+  assert.match(message(await shell.run("gitlab")), /command not found/);
+  const usages = (await shell.run("help")).out[0].rows.map((row) => row.usage);
+  assert.ok(!usages.some((usage) => usage.startsWith("github")));
+  assert.deepEqual(shell.complete("gi").candidates, []);
+  assert.equal(shell.complete("gi").line, "gi");
+});

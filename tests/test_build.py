@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import re
 import tarfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -10,7 +11,7 @@ import pytest
 
 from md_term import python_runtime
 from md_term.build import build, relurl
-from md_term.config import THEMES, Config, MdTermError, load_config
+from md_term.config import SHELL_COMMANDS, THEMES, Config, MdTermError, load_config
 from md_term.content import parse_page, strip_comments
 
 POST = """\
@@ -615,3 +616,43 @@ def test_nav_validation(project: Config):
 
     with pytest.raises(MdTermError, match="unknown command 'nope' in nav"):
         Config(root=project.root, nav=["nope"])
+
+
+def test_links_reach_the_shell(project: Config):
+    project.links = {"github": "https://github.com/someone"}
+    build(project)
+    fs = json.loads(read(project, "fs.json"))
+    assert fs["links"] == {"github": "https://github.com/someone"}
+    assert "github.com/someone" not in read(project, "index.html")  # hidden: no bar, no help
+
+    (project.docs_path / "index.md").write_text(
+        "---\nsite_links:\n  cv: files/cv.pdf\n  mail: mailto:me@example.com\n---\nBody\n"
+    )
+    build(project)
+    links = json.loads(read(project, "fs.json"))["links"]
+    assert links == {"cv": "files/cv.pdf", "mail": "mailto:me@example.com"}
+
+
+def test_links_validation(project: Config):
+    for front_matter, message in [
+        ("site_links: [a, b]", "index.md: 'site_links' must map command names to URLs"),
+        ("site_links:\n  ls: https://x.test/", "index.md: link 'ls' would replace the shell"),
+        ("site_links:\n  'a b': https://x.test/", "index.md: invalid command name"),
+        ("site_links:\n  x: 'javascript:alert(1)'", "index.md: link 'x' must be a path or"),
+        ("site_links:\n  x: 3", "index.md: link 'x' must be a URL"),
+    ]:
+        (project.docs_path / "index.md").write_text(f"---\n{front_matter}\n---\nBody\n")
+        with pytest.raises(MdTermError, match=message):
+            build(project)
+
+    config_file = project.root / "md-term.toml"
+    config_file.write_text('links = ["https://x.test/"]\n')
+    with pytest.raises(MdTermError, match="option 'links' must be a table of strings"):
+        load_config(config_file)
+
+
+def test_link_names_cannot_take_a_shell_command():
+    shell_js = (Path(__file__).parents[1] / "src/md_term/assets/js/shell.js").read_text()
+    # The keys of COMMANDS and ALIASES, the only objects at that indentation.
+    names = set(re.findall(r'^  (\w+): (?:\{|")', shell_js, re.MULTILINE))
+    assert names == set(SHELL_COMMANDS)
