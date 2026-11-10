@@ -51,6 +51,8 @@ PAGE_SETTINGS = {
     "site_github": "github",
     "site_avatar": "avatar",
     "site_nav": "nav",
+    "site_links": "links",
+    "site_sidebar": "sidebar",
 }
 DEFAULT_NAV = ("help", "ls", "tree", "posts", "tags", "python", "theme", "clear", "rss")
 NAV_COMMANDS = (
@@ -72,6 +74,15 @@ NAV_COMMANDS = (
     "cd",
     "pwd",
 )
+# The shell's commands and aliases (assets/js/shell.js), which a link cannot take.
+SHELL_COMMANDS = (
+    "help", "ls", "cd", "pwd", "tree", "cat", "grep", "posts", "tags", "tag", "python",
+    "edit", "touch", "cp", "mv", "rm", "theme", "history", "clear", "exit",
+    "open", "search", "ll", "dir", "nano", "vi", "vim", "logout",
+)  # fmt: skip
+_LINK_NAME = re.compile(r"[A-Za-z0-9][\w.-]*")
+_URL_SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*:")
+LINK_SCHEMES = ("http", "https", "mailto")
 PYTHON_RUNTIMES = ("monty", "pyodide")
 # A package name with an optional version specifier, as micropip accepts.
 _REQUIREMENT = re.compile(r"[A-Za-z0-9][\w.\-\[\],]*([=<>!~]=?[\w.*,=<>!~]+)?")
@@ -101,6 +112,8 @@ class Config:
     github: str = ""  # GitHub user: their picture, linked to the profile, in the title bar
     avatar: str = ""  # picture for the title bar instead of GitHub's: a file in docs or a URL
     nav: list[str] = field(default_factory=lambda: list(DEFAULT_NAV))
+    links: dict[str, str] = field(default_factory=dict)  # hidden commands that open a URL
+    sidebar: str = ""  # a note in docs shown beside the terminal on wide screens
     theme: str = THEMES[0]
     colors: dict[str, str] = field(default_factory=dict)
     extra_css: list[str] = field(default_factory=list)
@@ -138,6 +151,19 @@ class Config:
             if item not in NAV_COMMANDS:
                 commands = ", ".join(NAV_COMMANDS)
                 raise MdTermError(f"unknown command '{item}' in nav (choose from: {commands})")
+        if not isinstance(self.links, dict):
+            raise MdTermError("'links' must be a table of command = URL")
+        for name, url in self.links.items():
+            if not isinstance(name, str) or not _LINK_NAME.fullmatch(name):
+                raise MdTermError(f"invalid command name in links: {name!r}")
+            if name in SHELL_COMMANDS:
+                raise MdTermError(f"link '{name}' would replace the shell command of that name")
+            if not isinstance(url, str) or not url.strip():
+                raise MdTermError(f"link '{name}' must be a URL")
+            scheme = _URL_SCHEME.match(url)
+            if scheme and scheme[0][:-1].lower() not in LINK_SCHEMES:
+                schemes = ", ".join(LINK_SCHEMES)
+                raise MdTermError(f"link '{name}' must be a path or a {schemes} URL: {url!r}")
         if self.python is True:
             self.python = "monty"
         elif self.python is False:
@@ -194,6 +220,11 @@ class Config:
                         f"{src}: 'site_nav' must be a list of commands, text or false"
                     )
                 continue
+            if key == "site_links":
+                if not isinstance(value, dict):
+                    raise MdTermError(f"{src}: 'site_links' must map command names to URLs")
+                changes[option] = {str(name): url for name, url in value.items()}
+                continue
             if not isinstance(value, str):
                 raise MdTermError(f"{src}: '{key}' must be text")
             if option == "theme" and value in THEME_ALIASES:
@@ -249,7 +280,7 @@ def load_config(path: Path) -> Config:
     if unknown:
         raise MdTermError(f"{path}: unknown option(s): {', '.join(unknown)}")
     for key, value in data.items():
-        if key == "colors":
+        if key in ("colors", "links"):
             valid = isinstance(value, dict) and all(isinstance(v, str) for v in value.values())
             expected = "a table of strings"
         elif key in ("extra_css", "python_packages"):

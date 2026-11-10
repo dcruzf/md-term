@@ -44,7 +44,9 @@ alert = "#ff3b3b"
 | `icon`            | a `>_` tile              | the [favicon](#icon)                            |
 | `github`          | empty                    | GitHub user whose [picture](#picture) shows in the title bar |
 | `avatar`          | GitHub's picture         | another [picture](#picture) for the title bar   |
+| `sidebar`         | empty                    | a note shown in a [sidebar](#sidebar) on wide screens |
 | `nav`             | built-in commands        | commands in the top bar; `false` hides the bar  |
+| `[links]`         | empty                    | hidden [commands that open a link](#links)      |
 | `theme`           | `phosphor`               | [color theme](themes.md): `phosphor`, `amber`, `ice`, `mono`, `dracula` or `paper` |
 | `[colors]`        | empty                    | colors that replace the theme's                 |
 | `extra_css`       | empty                    | style sheets from `docs/`, loaded after the default one |
@@ -86,19 +88,50 @@ site_nav: [help, ls, tree, tags]
 | `site_github`      | `github`      |
 | `site_avatar`      | `avatar`      |
 | `site_nav`         | `nav`         |
+| `site_links`       | `[links]`     |
+| `site_sidebar`     | `sidebar`     |
 
 A property that is present wins over `md-term.toml`; one that is missing or
 empty leaves the file's value alone. The values are checked like the file's:
 an unknown theme, for example, stops the build with a message naming
 `index.md`.
 
-Only these twelve can be set this way, and only on the root `index.md`; the
+Only these fourteen can be set this way, and only on the root `index.md`; the
 same properties on any other page are ignored. Paths, `site_url`, colors,
 extra CSS and Python stay in `md-term.toml`.
 
 > [!NOTE]
 > `title` and `description` keep their usual meaning: they describe the home
 > *page*. The site's name and tagline are `site_name` and `site_description`.
+
+## Links
+
+Each entry of `[links]` is a command that opens its address in a new tab:
+typing `github` at the prompt opens the GitHub profile. These commands are
+hidden: they are not in `help`, Tab does not complete them and they never
+appear in the top bar, so only those who know the name use them.
+
+```toml
+[links]
+github = "https://github.com/octocat"
+cv = "files/cv.pdf"
+mail = "mailto:me@example.com"
+```
+
+Or, from the home page:
+
+```yaml
+---
+site_links:
+  github: https://github.com/octocat
+  cv: files/cv.pdf
+---
+```
+
+An address is an `http`, `https` or `mailto` URL, or a path in the site.
+A name cannot be one of the shell's commands, such as `ls` or `open`. The
+command also prints the address as a link, which is the way through when the
+browser blocks the new tab.
 
 ## Picture
 
@@ -122,6 +155,26 @@ avatar = "assets/me.jpg"
 ```
 
 The GitHub picture is fetched by the visitor's browser from `github.com`.
+
+## Sidebar
+
+On a wide screen the site can show a column beside the terminal, like the
+profile on a GitHub page. Its content is an ordinary note: point `sidebar`
+at it, by path from the docs folder.
+
+```toml
+sidebar = "sidebar.md"
+```
+
+From the home page, `site_sidebar: "[[sidebar]]"` does the same, so the
+property can be an Obsidian link. The note is written like any other, with
+links, pictures and lists, and is shown on every page, below the
+[picture](#picture) if there is one, which then leaves the title bar. It is
+not a page of its own: `ls`, the search and the tags never see it.
+
+Below about 1180 pixels of width, on phones and narrow windows, there is no
+room for it and the sidebar is not shown, so keep anything that matters
+elsewhere too.
 
 ## Icon
 
