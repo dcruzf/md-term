@@ -44,6 +44,7 @@ alert = "#ff3b3b"
 | `icon`            | a `>_` tile              | the [favicon](#icon)                            |
 | `github`          | empty                    | GitHub user whose [picture](#picture) shows in the title bar |
 | `avatar`          | GitHub's picture         | another [picture](#picture) for the title bar   |
+| `sidebar`         | empty                    | a note shown in a [sidebar](#sidebar) on wide screens |
 | `nav`             | built-in commands        | commands in the top bar; `false` hides the bar  |
 | `[links]`         | empty                    | hidden [commands that open a link](#links)      |
 | `theme`           | `phosphor`               | [color theme](themes.md): `phosphor`, `amber`, `ice`, `mono`, `dracula` or `paper` |
@@ -88,13 +89,14 @@ site_nav: [help, ls, tree, tags]
 | `site_avatar`      | `avatar`      |
 | `site_nav`         | `nav`         |
 | `site_links`       | `[links]`     |
+| `site_sidebar`     | `sidebar`     |
 
 A property that is present wins over `md-term.toml`; one that is missing or
 empty leaves the file's value alone. The values are checked like the file's:
 an unknown theme, for example, stops the build with a message naming
 `index.md`.
 
-Only these thirteen can be set this way, and only on the root `index.md`; the
+Only these fourteen can be set this way, and only on the root `index.md`; the
 same properties on any other page are ignored. Paths, `site_url`, colors,
 extra CSS and Python stay in `md-term.toml`.
 
@@ -153,6 +155,26 @@ avatar = "assets/me.jpg"
 ```
 
 The GitHub picture is fetched by the visitor's browser from `github.com`.
+
+## Sidebar
+
+On a wide screen the site can show a column beside the terminal, like the
+profile on a GitHub page. Its content is an ordinary note: point `sidebar`
+at it, by path from the docs folder.
+
+```toml
+sidebar = "sidebar.md"
+```
+
+From the home page, `site_sidebar: "[[sidebar]]"` does the same, so the
+property can be an Obsidian link. The note is written like any other, with
+links, pictures and lists, and is shown on every page, below the
+[picture](#picture) if there is one, which then leaves the title bar. It is
+not a page of its own: `ls`, the search and the tags never see it.
+
+Below about 1180 pixels of width, on phones and narrow windows, there is no
+room for it and the sidebar is not shown, so keep anything that matters
+elsewhere too.
 
 ## Icon
 

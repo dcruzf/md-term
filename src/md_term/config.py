@@ -52,6 +52,7 @@ PAGE_SETTINGS = {
     "site_avatar": "avatar",
     "site_nav": "nav",
     "site_links": "links",
+    "site_sidebar": "sidebar",
 }
 DEFAULT_NAV = ("help", "ls", "tree", "posts", "tags", "python", "theme", "clear", "rss")
 NAV_COMMANDS = (
@@ -112,6 +113,7 @@ class Config:
     avatar: str = ""  # picture for the title bar instead of GitHub's: a file in docs or a URL
     nav: list[str] = field(default_factory=lambda: list(DEFAULT_NAV))
     links: dict[str, str] = field(default_factory=dict)  # hidden commands that open a URL
+    sidebar: str = ""  # a note in docs shown beside the terminal on wide screens
     theme: str = THEMES[0]
     colors: dict[str, str] = field(default_factory=dict)
     extra_css: list[str] = field(default_factory=list)
