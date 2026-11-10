@@ -656,3 +656,44 @@ def test_link_names_cannot_take_a_shell_command():
     # The keys of COMMANDS and ALIASES, the only objects at that indentation.
     names = set(re.findall(r'^  (\w+): (?:\{|")', shell_js, re.MULTILINE))
     assert names == set(SHELL_COMMANDS)
+
+
+def test_sidebar_note_is_shown_on_every_page(project: Config):
+    (project.docs_path / "about").mkdir()
+    (project.docs_path / "about" / "me.jpg").write_bytes(b"jpg")
+    (project.docs_path / "about" / "side.md").write_text(
+        "---\ntags: [secret]\n---\n## Daniel\n\n![me](me.jpg) [setup](../guide/setup.md) [[first]]\n"
+    )
+    project.sidebar = "[[about/side]]"
+    project.github = "octocat"
+    build(project)
+
+    home, setup, missing = (
+        read(project, path) for path in ("index.html", "guide/setup/index.html", "404.html")
+    )
+    assert '<div class="term with-sidebar">' in home
+    assert '<aside class="sidebar"' in home and "<h2>Daniel</h2>" in home
+    assert 'src="about/me.jpg"' in home and 'href="guide/setup/"' in home
+    assert 'href="blog/first/"' in home
+    assert 'src="../../about/me.jpg"' in setup and 'href="./"' in setup
+    assert 'href="/sub/guide/setup/"' in missing
+    assert 'width="200"' in home  # the large picture
+
+    # The note is not a page of its own, and its tags and folder go with it.
+    assert not (project.site_path / "about" / "side").exists()
+    assert not (project.site_path / "about" / "index.html").exists()
+    fs = json.loads(read(project, "fs.json"))
+    assert "/about/side.md" not in fs["nodes"] and "/about" not in fs["nodes"]
+    assert "secret" not in fs["tags"]
+
+
+def test_sidebar_from_home_page_and_missing_note(project: Config, caplog):
+    (project.docs_path / "side.md").write_text("Hello from the side.\n")
+    (project.docs_path / "index.md").write_text("---\nsite_sidebar: side\n---\nBody\n")
+    build(project)
+    assert "Hello from the side." in read(project, "index.html")
+
+    (project.docs_path / "index.md").write_text("---\nsite_sidebar: nope.md\n---\nBody\n")
+    build(project)
+    assert '<aside class="sidebar"' not in read(project, "index.html")
+    assert "sidebar: 'nope.md' not found" in caplog.text

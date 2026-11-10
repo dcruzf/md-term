@@ -33,18 +33,21 @@ try {
 {% endif %}
 </head>
 <body>
-<div class="term">
+{% macro picture(size) %}
+{% if avatar.link %}
+<a class="avatar" href="{{ avatar.link }}" rel="me" title="{{ avatar.label }}"><img src="{{ avatar.src }}" alt="{{ avatar.label }}" width="{{ size }}" height="{{ size }}" decoding="async"></a>
+{% else %}
+<span class="avatar"><img src="{{ avatar.src }}" alt="{{ avatar.label }}" width="{{ size }}" height="{{ size }}" decoding="async"></span>
+{% endif %}
+{% endmacro %}
+<div class="term{% if sidebar is not none %} with-sidebar{% endif %}">
   <header class="titlebar">
     <a class="brand" href="{{ base }}">{{ config.site_name }}</a>
     {% if config.description %}
     <span class="tagline">{{ config.description }}</span>
     {% endif %}
     {% if avatar %}
-    {% if avatar.link %}
-    <a class="avatar" href="{{ avatar.link }}" rel="me" title="{{ avatar.label }}"><img src="{{ avatar.src }}" alt="{{ avatar.label }}" width="28" height="28" decoding="async"></a>
-    {% else %}
-    <span class="avatar"><img src="{{ avatar.src }}" alt="{{ avatar.label }}" width="28" height="28" decoding="async"></span>
-    {% endif %}
+    {{ picture(28) }}
     {% endif %}
   </header>
   {% if config.nav %}
@@ -77,6 +80,17 @@ try {
     {% endif %}
     {% endfor %}
   </nav>
+  {% endif %}
+  {% if sidebar is not none %}
+  {# Shown beside the terminal on wide screens only; see .with-sidebar in term.css. #}
+  <aside class="sidebar" aria-label="About">
+    {% if avatar %}
+    {{ picture(200) }}
+    {% endif %}
+    <div class="prose">
+      {{ sidebar|safe }}
+    </div>
+  </aside>
   {% endif %}
   <main class="screen">
     <div id="scrollback">

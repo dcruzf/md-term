@@ -191,7 +191,18 @@ def load_site(config: Config, *, drafts: bool = False) -> Site:
             static.append(src)
 
     _check_conflicts(pages, static)
+    return _assemble(pages, static)
 
+
+def detach(site: Site, src: str) -> tuple[Site, Page | None]:
+    """Takes the page `src` out of the site, as if it were not in the docs."""
+    page = site.by_src.get(src)
+    if page is None:
+        return site, None
+    return _assemble([p for p in site.pages if p is not page], site.static), page
+
+
+def _assemble(pages: list[Page], static: list[str]) -> Site:
     dirs: set[str] = set()
     for page in pages:
         dirs.update(_parents(page.src))
