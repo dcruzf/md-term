@@ -81,6 +81,8 @@ SHELL_COMMANDS = (
     "open", "search", "ll", "dir", "nano", "vi", "vim", "logout",
 )  # fmt: skip
 _LINK_NAME = re.compile(r"[A-Za-z0-9][\w.-]*")
+# An item of `site_links` written as a list: "name url" or "name: url".
+_LINK_ITEM = re.compile(r"([^\s:=]+)\s*(?::\s*|\s+)(\S+)")
 _URL_SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*:")
 LINK_SCHEMES = ("http", "https", "mailto")
 PYTHON_RUNTIMES = ("monty", "pyodide")
@@ -197,7 +199,7 @@ class Config:
         changes = {}
         for key, option in PAGE_SETTINGS.items():
             value = meta.get(key)
-            if value is None or value == "":
+            if value is None or value == "" or (key == "site_links" and value == []):
                 continue
             if key == "site_nav":
                 if value is False:
@@ -221,9 +223,7 @@ class Config:
                     )
                 continue
             if key == "site_links":
-                if not isinstance(value, dict):
-                    raise MdTermError(f"{src}: 'site_links' must map command names to URLs")
-                changes[option] = {str(name): url for name, url in value.items()}
+                changes[option] = _page_links(value, src)
                 continue
             if not isinstance(value, str):
                 raise MdTermError(f"{src}: '{key}' must be text")
@@ -259,6 +259,27 @@ class Config:
     @property
     def site_path(self) -> Path:
         return (self.root / self.site_dir).resolve()
+
+
+def _page_links(value: object, src: str) -> dict:
+    """`site_links` as {name: url}. Obsidian has no property for a mapping, so a
+    list of "name url" items (or "name: url") is accepted as well."""
+    if isinstance(value, dict):
+        return {str(name): url for name, url in value.items()}
+    if not isinstance(value, list):
+        raise MdTermError(f"{src}: 'site_links' must be a list of 'name url' items")
+    links = {}
+    for item in value:
+        if item is None or item == "":  # an empty line in Obsidian's list
+            continue
+        if isinstance(item, dict):  # `- name: url`, which YAML reads as a mapping
+            links.update({str(name): url for name, url in item.items()})
+            continue
+        match = _LINK_ITEM.fullmatch(str(item).strip())
+        if not match:
+            raise MdTermError(f"{src}: invalid entry in 'site_links': {item!r} (use 'name url')")
+        links[match[1]] = match[2]
+    return links
 
 
 def _host_from(site_name: str) -> str:

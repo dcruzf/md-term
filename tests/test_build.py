@@ -633,9 +633,29 @@ def test_links_reach_the_shell(project: Config):
     assert links == {"cv": "files/cv.pdf", "mail": "mailto:me@example.com"}
 
 
+def test_home_page_links_as_an_obsidian_list(project: Config):
+    (project.docs_path / "index.md").write_text(
+        "---\nsite_links:\n  - github https://github.com/someone\n  - 'cv: files/cv.pdf'\n"
+        "  - mail: mailto:me@example.com\n  -\n---\nBody\n"
+    )
+    build(project)
+    assert json.loads(read(project, "fs.json"))["links"] == {
+        "github": "https://github.com/someone",
+        "cv": "files/cv.pdf",
+        "mail": "mailto:me@example.com",
+    }
+
+    # An empty list, as Obsidian leaves it, keeps the links of md-term.toml.
+    project.links = {"blog": "https://blog.example.com/"}
+    (project.docs_path / "index.md").write_text("---\nsite_links: []\n---\nBody\n")
+    build(project)
+    assert json.loads(read(project, "fs.json"))["links"] == {"blog": "https://blog.example.com/"}
+
+
 def test_links_validation(project: Config):
     for front_matter, message in [
-        ("site_links: [a, b]", "index.md: 'site_links' must map command names to URLs"),
+        ("site_links: github", "index.md: 'site_links' must be a list of 'name url' items"),
+        ("site_links: [solo]", "index.md: invalid entry in 'site_links': 'solo'"),
         ("site_links:\n  ls: https://x.test/", "index.md: link 'ls' would replace the shell"),
         ("site_links:\n  'a b': https://x.test/", "index.md: invalid command name"),
         ("site_links:\n  x: 'javascript:alert(1)'", "index.md: link 'x' must be a path or"),

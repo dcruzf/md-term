@@ -118,13 +118,14 @@ cv = "files/cv.pdf"
 mail = "mailto:me@example.com"
 ```
 
-Or, from the home page:
+Or, from the home page, as a list of `name address` items, which Obsidian
+shows as an ordinary list property:
 
 ```yaml
 ---
 site_links:
-  github: https://github.com/octocat
-  cv: files/cv.pdf
+  - github https://github.com/octocat
+  - cv files/cv.pdf
 ---
 ```
 
