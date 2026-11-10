@@ -308,6 +308,17 @@ def test_pyodide_runtime_needs_no_download(project: Config, monkeypatch):
     assert sorted(p.name for p in target.iterdir()) == ["manifest.json", "pyodide.worker.js"]
 
 
+def test_python_false_on_a_page_marks_it_not_runnable(project: Config):
+    (project.docs_path / "guide" / "torch.md").write_text(
+        "---\npython: false\n---\n```python\nimport torch\n```\n"
+    )
+    build(project)
+    assert '<article class="out" id="content" data-path="/guide/torch.md" data-norun>' in read(
+        project, "guide/torch/index.html"
+    )
+    assert "data-norun" not in read(project, "guide/setup/index.html")
+
+
 def test_python_option_values(tmp_path: Path):
     path = tmp_path / "md-term.toml"
     for text, expected in [

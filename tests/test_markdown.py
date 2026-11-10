@@ -115,3 +115,10 @@ def test_embeds():
 def test_wikilink_syntax_is_left_alone_in_code_and_normal_links():
     assert "<code>[[not a link]]</code>" in wiki("`[[not a link]]`", {})
     assert '<a href="x.md">text</a>' in wiki("[text](x.md)", {})
+
+
+def test_norun_marks_a_code_block():
+    out = html("```python norun\nimport torch\n```\n\n```python\nprint(1)\n```\n")
+    first, second = out.split("</pre>")[:2]
+    assert '<code data-norun="" class="language-python">' in first
+    assert "data-norun" not in second

@@ -80,6 +80,22 @@ print(matrix)
 print("column sums:", matrix.sum(axis=0))
 ```
 
+### Code that does not run in the browser
+
+Some examples cannot run here: they need PyTorch, a GPU, files on disk or a
+package nobody ported to Pyodide. Such blocks can lose `[run]` and `[edit]`
+and keep only `[copy]`:
+
+- one block: write `norun` after the language, as in ` ```python norun `;
+- a whole page: set `python: false` in its front matter, a checkbox property
+  in Obsidian.
+
+```python norun
+import torch
+
+print(torch.cuda.is_available())
+```
+
 ## The REPL
 
 ```console
